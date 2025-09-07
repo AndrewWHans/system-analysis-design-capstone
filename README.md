@@ -1,1 +1,3 @@
-
+## Our Project
+This project part of a group capstone for SYSTEM ANALYSIS AND DESIGN (CSCI-C308 | INFO-I450) where skills of:
+- Software Engineering Principles , Agile , OOA (Object Oriented Analysis) , and Architecture is applied.
