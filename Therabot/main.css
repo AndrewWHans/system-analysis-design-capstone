@@ -1,0 +1,81 @@
+*{
+	margin:0;
+	padding:0;
+	font-family:"Verdana","Open Sans", "Roboto", "Arial", sans-serif;
+}
+body{
+	background-color:#1e1e1e;
+}
+h1{
+	color:white;
+	font-size:5em;
+}
+h2{
+	color:white;
+}
+/*-------------------------------*/
+#titleCont{
+	margin:auto;
+	text-align:center;
+	margin-top:3em;
+}
+#loginCont {
+	margin:auto;
+	margin-top:100px;
+	box-sizing: border-box;
+	padding:20px;
+	padding-top:20px;
+	width:545px;
+	height:190px;
+	background-color:#2d2d30;
+	border-radius:0px;
+}
+
+#loginCont input{
+	border-color:#3e3e42;
+	border-radius:0px;
+	height:3em;
+	width:500px;
+	margin-bottom:5px;
+	background-color:
+}
+#loginCont button{
+	width:505px;
+	height:3em;
+	border-radius:0px;
+	border-color:#3e3e42;
+	box-sizing: border-box;
+}
+#signinCont {
+	margin:auto;
+	margin-top:100px;
+	box-sizing: border-box;
+	padding:20px;
+	padding-top:20px;
+	width:545px;
+	height:260px;
+	background-color:#2d2d30;
+	border-radius:0px;
+}
+#signinCont input{
+	border-color:#3e3e42;
+	border-radius:0px;
+	height:3em;
+	width:500px;
+	margin-bottom:5px;
+	color:white;
+}
+#signinCont button{
+	width:505px;
+	height:3em;
+	border-radius:0px;
+	border-color:#3e3e42;
+	box-sizing: border-box;
+}
+#underForm{
+	font-size:.8em;
+	color:#F0F0F0;
+}
+#underForm a{
+	color:#B0B0B0;
+}
