@@ -1,0 +1,62 @@
+services:
+  # Database Service (MySQL)
+  db:
+    image: mysql:9.5
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: therabot
+    ports:
+      - "3307:3306" # Maps localhost:3307 to container:3306
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - therabot-network
+
+  # phpMyAdmin Service for easy database access
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    ports:
+      - "8080:80"
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+    depends_on:
+      - db
+    networks:
+      - therabot-network
+
+  # Backend Service
+  backend:
+    build: ./backend
+    ports:
+      - "3000:3000"
+    environment:
+      - DB_HOST=db
+      - DB_USER=root
+      - DB_PASSWORD=root
+      - DB_NAME=therabot
+    depends_on:
+      - db
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    networks:
+      - therabot-network
+
+  # Frontend Service
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - therabot-network
+
+volumes:
+  db_data:
+
+networks:
+  therabot-network:
+    driver: bridge
