@@ -1,74 +1,27 @@
 import { getToken } from "../utils/auth";
 import { getThemeToggleSVG, attachThemeToggle } from "../utils/theme";
+import adminHtml from "./templates/AdminPage.html?raw";
 
 interface Entity { id: number; name?: string; [key: string]: any; }
 
-const ARROW_LEFT = `
-<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-</svg>
-`;
-
-const ICON_EDIT = `
-<svg class="w-5 h-5 text-blue-500 hover:text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-`;
-
-const ICON_TRASH = `
-<svg class="w-5 h-5 text-red-500 hover:text-red-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-`;
+// Dynamic Icons needed for JS generation
+const ICON_EDIT = `<svg class="w-5 h-5 text-blue-500 hover:text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>`;
+const ICON_TRASH = `<svg class="w-5 h-5 text-red-500 hover:text-red-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>`;
 
 let currentType = 'CopingMechanism';
 let isEditingId: number | null = null;
 
-export const renderAdminPage = () => `
-  <div class="min-h-screen bg-gray-50 dark:bg-gray-950 font-sans transition-colors duration-300 flex">
-    
-    <!-- Sidebar -->
-    <aside class="w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col h-screen fixed md:relative z-10">
-      <div class="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
-        <h1 class="font-bold text-xl text-black dark:text-white">Admin Panel</h1>
-        <button id="btn-back-home" class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition">${ARROW_LEFT}</button>
-      </div>
-      <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
-        ${['Coping Mechanism', 'Trigger', 'Mood', 'Symptom', 'Condition', 'Diagnosis'].map(item => `
-          <button class="nav-item w-full text-left px-4 py-3 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-black dark:hover:text-white transition ${currentType === item.replace(' ', '') ? 'bg-gray-100 dark:bg-gray-800 font-semibold' : ''}"
-            data-target="${item.replace(' ', '')}">
-            ${item}
-          </button>
-        `).join('')}
-      </nav>
-      <div class="p-4 border-t border-gray-100 dark:border-gray-800">
-        ${getThemeToggleSVG()}
-      </div>
-    </aside>
+export const renderAdminPage = () => {
+    return adminHtml;
+};
 
-    <!-- Main Content -->
-    <main class="flex-1 p-8 overflow-y-auto ml-64 md:ml-0 w-full">
-      <div class="max-w-5xl mx-auto">
-        <div id="action-header" class="flex justify-between items-center mb-8">
-            <h2 id="page-title" class="text-3xl font-bold text-black dark:text-white">Coping Mechanisms</h2>
-            <button id="btn-create-new" class="bg-[#5B3E86] text-white px-5 py-2 rounded-lg hover:bg-[#4a326c] transition shadow-md">
-                + Create New
-            </button>
-        </div>
-
-        <!-- Content Area: Swaps between List Table and Form -->
-        <div id="main-content-area" class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6 min-h-[400px]">
-            <div id="loading-spinner" class="text-center py-10 text-gray-500">Loading...</div>
-        </div>
-      </div>
-    </main>
-  </div>
-`;
-
-// Helpers to get Endpoint URLs
+// --- API Helpers ---
 const getEndpoint = (type: string) => {
     let ep = type.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase() + 's';
     if(type === 'Diagnosis') ep = 'diagnoses';
     return ep;
 }
 
-// Data Fetcher
 const fetchData = async (endpoint: string) => {
   try {
     const res = await fetch(`http://localhost:3000/${endpoint}`);
@@ -83,7 +36,7 @@ const fetchSingle = async (endpoint: string, id: number) => {
     } catch { return null; }
 }
 
-// Render Functions
+// --- Dynamic View Renderers (Table & Form) ---
 const renderTable = (data: Entity[]) => {
     if (data.length === 0) return `<div class="text-center py-10 text-gray-500">No items found. Create one!</div>`;
 
@@ -180,24 +133,18 @@ const renderForm = (type: string) => {
     `;
 };
 
-// Logic Wiring
-
-// Populates select options and sets values if editing
+// --- Logic Wiring ---
 const prepareForm = async (type: string, data: Entity | null = null) => {
     const populate = async (selectId: string, endpoint: string, selectedItems: any[] = []) => {
         const el = document.getElementById(selectId) as HTMLSelectElement;
         if (!el) return;
         const options = await fetchData(endpoint);
-        
-        // Use a set of IDs for faster lookup
         const selectedIds = new Set(selectedItems.map((i: any) => i.id));
-
         el.innerHTML = options.map(d => 
             `<option value="${d.id}" ${selectedIds.has(d.id) ? 'selected' : ''}>${d.name}</option>`
         ).join('');
     };
 
-    // Populate Select Options first
     if (type === 'Symptom') {
         await populate('triggers', 'triggers', data?.triggers);
         await populate('moods', 'moods', data?.moods);
@@ -209,16 +156,12 @@ const prepareForm = async (type: string, data: Entity | null = null) => {
         await populate('symptoms', 'symptoms', data?.symptoms);
     }
 
-    // Fill Basic Inputs
     if (data) {
         const inputs = document.querySelectorAll('input');
         inputs.forEach(input => {
-            if (data[input.name] !== undefined) {
-                input.value = data[input.name];
-            }
+            if (data[input.name] !== undefined) input.value = data[input.name];
         });
         
-        // Single select needs specific handling if not handled by populate
         if (type === 'Diagnosis' && data.condition) {
              const condSelect = document.getElementById('condition') as HTMLSelectElement;
              if(condSelect) condSelect.value = data.condition.id.toString();
@@ -227,7 +170,11 @@ const prepareForm = async (type: string, data: Entity | null = null) => {
 };
 
 export const setupAdminPage = (navigate: (path: string) => void) => {
+  // Inject Theme Toggle
+  const themeContainer = document.getElementById("theme-toggle-container");
+  if(themeContainer) themeContainer.innerHTML = getThemeToggleSVG();
   attachThemeToggle();
+
   document.getElementById('btn-back-home')?.addEventListener('click', () => navigate('/'));
 
   const contentArea = document.getElementById('main-content-area')!;
@@ -256,7 +203,7 @@ export const setupAdminPage = (navigate: (path: string) => void) => {
     const data = await fetchData(endpoint);
     contentArea.innerHTML = renderTable(data);
 
-    // Attach Event Listeners to dynamic buttons
+    // Event Listeners for Table Buttons
     document.querySelectorAll('.btn-delete').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const id = (e.currentTarget as HTMLElement).getAttribute('data-id');
@@ -280,40 +227,19 @@ export const setupAdminPage = (navigate: (path: string) => void) => {
   };
 
   const loadFormView = async () => {
-    createBtn.style.display = 'none'; // Hide create button
+    createBtn.style.display = 'none';
     contentArea.innerHTML = renderForm(currentType);
-    
     document.getElementById('btn-cancel-form')?.addEventListener('click', loadListView);
 
     const endpoint = getEndpoint(currentType);
     let existingData = null;
-
-    if (isEditingId) {
-        existingData = await fetchSingle(endpoint, isEditingId);
-    }
+    if (isEditingId) existingData = await fetchSingle(endpoint, isEditingId);
 
     await prepareForm(currentType, existingData);
     setupFormSubmit(currentType, endpoint);
   };
 
-  // Initial Load
-  loadListView();
-
-  // Navigation Handling
-  navItems.forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      currentType = (e.target as HTMLElement).getAttribute('data-target')!;
-      loadListView();
-    });
-  });
-
-  // Create Button Handling
-  createBtn.addEventListener('click', () => {
-      isEditingId = null;
-      loadFormView();
-  });
-
-  // Form Submission Logic
+  // Setup Create/Update Form Submit
   const setupFormSubmit = (type: string, endpoint: string) => {
     const form = document.getElementById('create-form') as HTMLFormElement;
     const msg = document.getElementById('msg')!;
@@ -376,11 +302,26 @@ export const setupAdminPage = (navigate: (path: string) => void) => {
         
         msg.textContent = "Success!";
         msg.className = "mt-4 text-center text-sm font-medium text-green-600";
-        setTimeout(() => loadListView(), 500); // Go back to list
+        setTimeout(() => loadListView(), 500); 
       } catch (err) {
         msg.textContent = "Error saving entity.";
         msg.className = "mt-4 text-center text-sm font-medium text-red-600";
       }
     });
   }
+
+  // Initial Initialization
+  loadListView();
+
+  navItems.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      currentType = (e.target as HTMLElement).getAttribute('data-target')!;
+      loadListView();
+    });
+  });
+
+  createBtn.addEventListener('click', () => {
+      isEditingId = null;
+      loadFormView();
+  });
 };

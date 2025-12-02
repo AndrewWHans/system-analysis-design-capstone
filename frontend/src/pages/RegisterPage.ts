@@ -1,6 +1,5 @@
 import { setToken } from "../utils/auth";
 import { getThemeToggleSVG, attachThemeToggle } from "../utils/theme";
-// Import raw HTML
 import registerHtml from "./templates/RegisterPage.html?raw";
 
 export const renderRegisterPage = () => {

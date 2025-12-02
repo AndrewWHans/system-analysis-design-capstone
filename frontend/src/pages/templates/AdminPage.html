@@ -1,0 +1,116 @@
+<div
+    class="min-h-screen bg-gray-50 dark:bg-gray-950 font-sans transition-colors duration-300 flex"
+>
+    <!-- Sidebar -->
+    <aside
+        class="w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col h-screen fixed md:relative z-10"
+    >
+        <div
+            class="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center"
+        >
+            <h1 class="font-bold text-xl text-black dark:text-white">
+                Admin Panel
+            </h1>
+            <button
+                id="btn-back-home"
+                class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+            >
+                <!-- Left Arrow SVG -->
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="w-6 h-6 text-gray-500 dark:text-gray-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                >
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M11 19l-7-7 7-7m8 14l-7-7 7-7"
+                    />
+                </svg>
+            </button>
+        </div>
+
+        <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
+            <button
+                class="nav-item w-full text-left px-4 py-3 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-black dark:hover:text-white transition bg-gray-100 dark:bg-gray-800 font-semibold"
+                data-target="CopingMechanism"
+            >
+                Coping Mechanism
+            </button>
+            <button
+                class="nav-item w-full text-left px-4 py-3 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-black dark:hover:text-white transition"
+                data-target="Trigger"
+            >
+                Trigger
+            </button>
+            <button
+                class="nav-item w-full text-left px-4 py-3 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-black dark:hover:text-white transition"
+                data-target="Mood"
+            >
+                Mood
+            </button>
+            <button
+                class="nav-item w-full text-left px-4 py-3 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-black dark:hover:text-white transition"
+                data-target="Symptom"
+            >
+                Symptom
+            </button>
+            <button
+                class="nav-item w-full text-left px-4 py-3 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-black dark:hover:text-white transition"
+                data-target="Condition"
+            >
+                Condition
+            </button>
+            <button
+                class="nav-item w-full text-left px-4 py-3 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-black dark:hover:text-white transition"
+                data-target="Diagnosis"
+            >
+                Diagnosis
+            </button>
+        </nav>
+
+        <div class="p-4 border-t border-gray-100 dark:border-gray-800">
+            <!-- Theme Toggle Placeholder -->
+            <div id="theme-toggle-container"></div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 p-8 overflow-y-auto ml-64 md:ml-0 w-full">
+        <div class="max-w-5xl mx-auto">
+            <div
+                id="action-header"
+                class="flex justify-between items-center mb-8"
+            >
+                <h2
+                    id="page-title"
+                    class="text-3xl font-bold text-black dark:text-white"
+                >
+                    Coping Mechanisms
+                </h2>
+                <button
+                    id="btn-create-new"
+                    class="bg-[#5B3E86] text-white px-5 py-2 rounded-lg hover:bg-[#4a326c] transition shadow-md"
+                >
+                    + Create New
+                </button>
+            </div>
+
+            <!-- Content Area: Swaps between List Table and Form -->
+            <div
+                id="main-content-area"
+                class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6 min-h-[400px]"
+            >
+                <div
+                    id="loading-spinner"
+                    class="text-center py-10 text-gray-500"
+                >
+                    Loading...
+                </div>
+            </div>
+        </div>
+    </main>
+</div>

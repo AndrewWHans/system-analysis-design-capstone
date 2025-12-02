@@ -1,6 +1,5 @@
 import { isLoggedIn, removeToken } from "../utils/auth";
 import { getThemeToggleSVG, attachThemeToggle } from "../utils/theme";
-// Import the raw HTML content
 import homeHtml from "./templates/HomePage.html?raw";
 
 export const renderHomePage = () => {
