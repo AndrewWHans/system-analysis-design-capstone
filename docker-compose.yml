@@ -6,13 +6,19 @@ services:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: therabot
     ports:
-      - "3307:3306" # Maps localhost:3307 to container:3306
+      - "3307:3306"
     volumes:
       - db_data:/var/lib/mysql
     networks:
       - therabot-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
-  # phpMyAdmin Service for easy database access
+  # phpMyAdmin Service
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
     ports:
@@ -21,7 +27,8 @@ services:
       PMA_HOST: db
       PMA_PORT: 3306
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     networks:
       - therabot-network
 
@@ -36,7 +43,8 @@ services:
       - DB_PASSWORD=root
       - DB_NAME=therabot
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     volumes:
       - ./backend:/app
       - /app/node_modules
