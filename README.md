@@ -6,6 +6,39 @@ Therabot is a diagnostic interview training platform designed for psychology stu
 
 ---
 
+## Project Structure
+
+### Root Directory
+*   **`docker-compose.yml`**: Orchestrates the Docker containers (Database, Backend, Frontend, phpMyAdmin).
+*   **`.gitignore`**: Specifies files to be ignored by Git (node_modules, build artifacts).
+
+### Backend (`/backend`)
+*   **`src/index.ts`**: The entry point of the API server. Defines routes and initializes services.
+*   **`src/data-source.ts`**: Configuration for the MySQL database connection.
+*   **`src/entity/`**: Defines Database Models (Tables).
+    *   *Examples: `TherapistEntity.ts`, `ScenarioEntity.ts`, `TherapySessionEntity.ts`.*
+*   **`src/repository/`**: Handles direct database interactions (CRUD operations).
+    *   *Examples: `ScenarioRepository.ts`, `TherapistRepository.ts`.*
+*   **`src/service/`**: Contains business logic, separating the controller logic from the database.
+    *   *Examples: `TherapistService.ts` (Auth), `TherapySessionService.ts` (Chat logic).*
+*   **`src/middleware/`**: Express middleware functions.
+    *   `authMiddleware.ts`: Handles JWT verification and Admin checks.
+*   **`src/utils/`**: Utility classes.
+    *   `AppError.ts`, `errorHandler.ts`: Standardized error handling.
+
+### Frontend (`/frontend`)
+*   **`src/main.ts`**: The entry point. Handles client-side routing and initialization.
+*   **`src/pages/`**: Logic files for specific application pages.
+    *   `ChatPage.ts`, `AdminPage.ts`, `LoginPage.ts`, etc.
+*   **`src/pages/templates/`**: Raw HTML files loaded by the page logic files.
+    *   `ChatPage.html`, `AdminPage.html`, etc.
+*   **`src/utils/`**: Frontend helper functions.
+    *   `auth.ts`: Manages JWT tokens in LocalStorage.
+    *   `theme.ts`: Handles Dark/Light mode toggling.
+*   **`vite.config.ts`**: Configuration for the Vite build tool.
+
+---
+
 ## Prerequisites
 
 Before starting, ensure you have the following installed on your machine:
@@ -48,7 +81,7 @@ Once the containers are running, you can access the system via your web browser:
 
 *   **Frontend (User Interface):** [http://localhost:5173](http://localhost:5173)
 *   **Backend API (Test if the API is working):** [http://localhost:3000](http://localhost:3000)
-*   **Database (External Access):** `localhost:8080`
+*   **Database (External Access):** [http://localhost:8080](http://localhost:8080)
     *   User: `root`
     *   Password: `root`
     *   Database: `therabot`
