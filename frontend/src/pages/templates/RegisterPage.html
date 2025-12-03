@@ -1,8 +1,9 @@
 <div
     class="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950 font-sans relative transition-colors duration-300"
 >
-    <!-- Theme Toggle Placeholder -->
-    <div id="theme-toggle-container" class="absolute top-4 right-4"></div>
+    <div class="absolute top-4 right-4">
+        <theme-toggle></theme-toggle>
+    </div>
 
     <div
         class="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg w-full max-w-md transition-colors duration-300"
@@ -15,9 +16,7 @@
                 Join Therabot to start training
             </p>
         </div>
-
         <form id="register-form" class="space-y-6">
-            <!-- Error Message Container -->
             <div
                 id="error-msg"
                 class="hidden bg-red-100 text-red-700 p-3 rounded text-sm"
@@ -26,7 +25,6 @@
                 id="success-msg"
                 class="hidden bg-green-100 text-green-700 p-3 rounded text-sm"
             ></div>
-
             <div>
                 <label
                     class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
@@ -40,11 +38,7 @@
                     class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
                     placeholder="DrSmith or you@example.com"
                 />
-                <p class="text-xs text-gray-400 mt-1">
-                    You can use either your username or email address.
-                </p>
             </div>
-
             <div>
                 <label
                     class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
@@ -59,7 +53,6 @@
                     placeholder="••••••••"
                 />
             </div>
-
             <button
                 type="submit"
                 id="submit-btn"
@@ -68,7 +61,6 @@
                 Sign Up
             </button>
         </form>
-
         <div class="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
             Already have an account?
             <a

@@ -1,7 +1,6 @@
 <div
     class="min-h-screen bg-gray-50 dark:bg-gray-950 font-sans transition-colors duration-300 flex"
 >
-    <!-- Sidebar -->
     <aside
         class="w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col h-screen fixed md:relative z-10"
     >
@@ -15,7 +14,6 @@
                 id="btn-back-home"
                 class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition"
             >
-                <!-- Left Arrow SVG -->
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
                     class="w-6 h-6 text-gray-500 dark:text-gray-400"
@@ -32,7 +30,6 @@
                 </svg>
             </button>
         </div>
-
         <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
             <button
                 class="nav-item w-full text-left px-4 py-3 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-black dark:hover:text-white transition bg-gray-100 dark:bg-gray-800 font-semibold"
@@ -71,14 +68,10 @@
                 Diagnosis
             </button>
         </nav>
-
         <div class="p-4 border-t border-gray-100 dark:border-gray-800">
-            <!-- Theme Toggle Placeholder -->
-            <div id="theme-toggle-container"></div>
+            <theme-toggle></theme-toggle>
         </div>
     </aside>
-
-    <!-- Main Content -->
     <main class="flex-1 p-8 overflow-y-auto ml-64 md:ml-0 w-full">
         <div class="max-w-5xl mx-auto">
             <div
@@ -98,8 +91,6 @@
                     + Create New
                 </button>
             </div>
-
-            <!-- Content Area: Swaps between List Table and Form -->
             <div
                 id="main-content-area"
                 class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6 min-h-[400px]"

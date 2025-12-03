@@ -1,7 +1,6 @@
 <div
     class="min-h-screen bg-white dark:bg-gray-950 font-sans flex flex-col transition-colors duration-300"
 >
-    <!-- Navbar -->
     <nav
         class="flex justify-between items-center px-8 py-6 max-w-7xl mx-auto w-full"
     >
@@ -25,17 +24,14 @@
             Therabot
         </div>
         <div class="flex items-center gap-4">
-            <!-- Theme Toggle Placeholder -->
-            <div id="theme-toggle-container"></div>
-            <!-- Dynamic Nav Buttons Placeholder -->
+            <theme-toggle></theme-toggle>
+
             <div
                 id="nav-buttons-container"
                 class="flex gap-4 items-center"
             ></div>
         </div>
     </nav>
-
-    <!-- Hero Section -->
     <header
         class="flex-1 flex flex-col items-center justify-center text-center px-4 mt-10 mb-20"
     >
@@ -53,7 +49,6 @@
             practice clinical skills, diagnose conditions, and receive instant
             feedback without the risk.
         </p>
-
         <div class="flex gap-4">
             <button
                 id="hero-chat"
@@ -63,13 +58,10 @@
             </button>
         </div>
     </header>
-
-    <!-- Features Grid -->
     <section
         class="bg-gray-50 dark:bg-gray-900 py-20 px-4 transition-colors duration-300"
     >
         <div class="max-w-7xl mx-auto grid md:grid-cols-3 gap-10">
-            <!-- Feature 1 -->
             <div
                 class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-sm hover:shadow-md transition"
             >
@@ -95,8 +87,6 @@
                     professionals.
                 </p>
             </div>
-
-            <!-- Feature 2 -->
             <div
                 class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-sm hover:shadow-md transition"
             >
@@ -121,8 +111,6 @@
                     Get corrected immediately if you miss the mark.
                 </p>
             </div>
-
-            <!-- Feature 3 -->
             <div
                 class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-sm hover:shadow-md transition"
             >
@@ -149,8 +137,6 @@
             </div>
         </div>
     </section>
-
-    <!-- Footer -->
     <footer
         class="bg-white dark:bg-gray-950 py-10 text-center text-gray-400 dark:text-gray-600 text-sm border-t border-gray-100 dark:border-gray-900"
     >

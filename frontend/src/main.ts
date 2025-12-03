@@ -9,7 +9,8 @@ import { isAdmin } from './utils/auth';
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
 
-initTheme();
+// Initialize theme
+initTheme(); 
 
 const navigate = (path: string) => {
   window.history.pushState({}, "", path);

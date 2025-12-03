@@ -1,8 +1,9 @@
 <div
     class="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950 font-sans relative transition-colors duration-300"
 >
-    <!-- Theme Toggle Placeholder -->
-    <div id="theme-toggle-container" class="absolute top-4 right-4"></div>
+    <div class="absolute top-4 right-4">
+        <theme-toggle></theme-toggle>
+    </div>
 
     <div
         class="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg w-full max-w-md transition-colors duration-300"
@@ -15,14 +16,11 @@
                 Log in to continue your training
             </p>
         </div>
-
         <form id="login-form" class="space-y-6">
-            <!-- Error Message Container -->
             <div
                 id="login-error-msg"
                 class="hidden bg-red-100 text-red-700 p-3 rounded text-sm"
             ></div>
-
             <div>
                 <label
                     class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
@@ -37,7 +35,6 @@
                     placeholder="DrSmith or you@example.com"
                 />
             </div>
-
             <div>
                 <label
                     class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
@@ -52,7 +49,6 @@
                     placeholder="••••••••"
                 />
             </div>
-
             <button
                 type="submit"
                 id="login-submit-btn"
@@ -61,7 +57,6 @@
                 Log In
             </button>
         </form>
-
         <div class="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
             Don't have an account?
             <a

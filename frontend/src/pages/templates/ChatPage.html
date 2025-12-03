@@ -1,7 +1,6 @@
 <div
     class="flex h-screen bg-white dark:bg-gray-950 font-sans overflow-hidden transition-colors duration-300"
 >
-    <!-- Sidebar -->
     <aside
         class="w-64 bg-gray-50 dark:bg-gray-900 h-screen border-r border-gray-200 dark:border-gray-800 flex flex-col p-6 hidden md:flex font-sans transition-colors duration-300"
     >
@@ -9,7 +8,6 @@
             <div
                 class="p-2 border-2 border-black dark:border-white rounded-lg text-black dark:text-white"
             >
-                <!-- Robot Icon -->
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
                     class="w-8 h-8"
@@ -31,7 +29,6 @@
                 class="hover:bg-gray-200 dark:hover:bg-gray-700 rounded p-1"
                 id="sidebar-back"
             >
-                <!-- Arrow Left Icon -->
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
                     class="w-6 h-6 text-gray-500 dark:text-gray-400"
@@ -48,7 +45,6 @@
                 </svg>
             </button>
         </div>
-
         <nav class="space-y-4 mb-10">
             <div
                 id="nav-home"
@@ -62,7 +58,6 @@
             >
                 New Chat
             </div>
-            <!-- Admin Link (Hidden by default) -->
             <div
                 id="nav-admin"
                 class="hidden font-medium text-red-600 dark:text-red-400 cursor-pointer hover:text-red-800 dark:hover:text-red-300 mt-4 border-t border-gray-200 dark:border-gray-800 pt-4"
@@ -70,7 +65,6 @@
                 Admin Dashboard
             </div>
         </nav>
-
         <div>
             <h3 class="text-gray-400 font-medium mb-4 text-sm">History</h3>
             <div class="space-y-2">
@@ -82,8 +76,8 @@
                 <div
                     class="flex items-center text-gray-700 dark:text-gray-300 cursor-pointer py-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
                 >
-                    <span>Alyssa</span>
-                    <svg
+                    <span>Alyssa</span
+                    ><svg
                         class="w-4 h-4 ml-auto"
                         fill="none"
                         stroke="currentColor"
@@ -101,8 +95,8 @@
                     class="group cursor-pointer py-1 text-gray-700 dark:text-gray-300"
                 >
                     <div class="flex items-center">
-                        <span>Kaitlyn</span>
-                        <svg
+                        <span>Kaitlyn</span
+                        ><svg
                             class="w-4 h-4 ml-auto"
                             fill="none"
                             stroke="currentColor"
@@ -125,9 +119,7 @@
             </div>
         </div>
     </aside>
-
     <main class="flex-1 flex flex-col relative">
-        <!-- Chat Header -->
         <header
             class="h-20 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between px-8 bg-white dark:bg-gray-900 transition-colors duration-300"
         >
@@ -135,20 +127,15 @@
                 Brandan
             </h1>
             <div class="flex items-center gap-4">
-                <!-- Theme Toggle -->
-                <div id="theme-toggle-container"></div>
-                <!-- Auth Buttons -->
+                <theme-toggle></theme-toggle>
                 <div id="auth-buttons-container"></div>
             </div>
         </header>
-
-        <!-- Chat Container -->
         <div
             id="chat-container"
             class="flex-1 overflow-y-auto p-8 pb-32 scroll-smooth"
         >
             <div class="max-w-5xl mx-auto pt-8">
-                <!-- Sample User Message -->
                 <div class="flex justify-end mb-6">
                     <div
                         class="bg-blue-500 text-white p-5 rounded-xl rounded-tr-none max-w-md text-lg leading-relaxed shadow-sm"
@@ -157,8 +144,6 @@
                         malesuada.Nec metus bibendum?
                     </div>
                 </div>
-
-                <!-- Sample Bot Message with Avatar -->
                 <div class="flex items-end gap-4 mb-6">
                     <div class="mb-2 shrink-0">
                         <svg
@@ -221,8 +206,6 @@
                         Himenaeos orci varius natoque penatibus et magnis dis.
                     </div>
                 </div>
-
-                <!-- Sample User Message -->
                 <div class="flex justify-end mb-6">
                     <div
                         class="bg-blue-500 text-white p-5 rounded-xl rounded-tr-none max-w-md text-lg leading-relaxed shadow-sm"
@@ -231,8 +214,6 @@
                         lobortis?
                     </div>
                 </div>
-
-                <!-- Choice Area (Sample) -->
                 <div class="grid grid-cols-2 gap-6 mt-12 ml-28">
                     <button
                         class="choice-btn bg-[#5B3E86] dark:bg-[#6D4C9D] text-white p-6 rounded-2xl text-lg text-left shadow-md hover:opacity-90 transition transform hover:-translate-y-1 h-full flex items-center justify-center text-center"
@@ -241,7 +222,6 @@
                         placerat. Vitae pellentesque sem placerat in id cursus
                         mi?
                     </button>
-
                     <button
                         class="choice-btn bg-[#FF9F45] !text-black font-medium text-white p-6 rounded-2xl text-lg text-left shadow-md hover:opacity-90 transition transform hover:-translate-y-1 h-full flex items-center justify-center text-center"
                     >

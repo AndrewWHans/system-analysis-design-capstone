@@ -1,5 +1,4 @@
 import { isLoggedIn, removeToken } from "../utils/auth";
-import { getThemeToggleSVG, attachThemeToggle } from "../utils/theme";
 import homeHtml from "./templates/HomePage.html?raw";
 
 export const renderHomePage = () => {
@@ -7,12 +6,7 @@ export const renderHomePage = () => {
 };
 
 export const setupHomePage = (navigate: (path: string) => void) => {
-  // Inject theme toggle into placeholder
-  const themeContainer = document.getElementById("theme-toggle-container");
-  if (themeContainer) themeContainer.innerHTML = getThemeToggleSVG();
-  attachThemeToggle();
-
-  // Inject dynamic nav nuttons based on auth state
+  // Inject Dynamic Nav Buttons based on auth state
   const navContainer = document.getElementById("nav-buttons-container");
   if (navContainer) {
     if (isLoggedIn()) {
@@ -28,24 +22,22 @@ export const setupHomePage = (navigate: (path: string) => void) => {
     }
   }
 
-  // Helper to attach navigation listeners safely
+  // Helpers
   const handleNav = (id: string, path: string) => {
     const el = document.getElementById(id);
     if (el) el.addEventListener('click', () => navigate(path));
   };
 
-  // Attach listeners to potential buttons
   handleNav('nav-register', '/register');
   handleNav('nav-login', '/login');
   handleNav('nav-chat', '/chat');
   handleNav('hero-chat', '/chat');
 
-  // Special Logout Logic
   const logoutBtn = document.getElementById('nav-logout');
   if (logoutBtn) {
     logoutBtn.addEventListener('click', () => {
       removeToken();
-      navigate('/'); // Refresh home to update UI state
+      navigate('/');
     });
   }
 }
