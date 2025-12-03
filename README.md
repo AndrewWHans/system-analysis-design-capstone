@@ -35,7 +35,7 @@ This project is containerized using Docker, which sets up the Database (MySQL), 
 
 ### How to Build and Run the Containers
 
-Ensure Docker Desktop is running, then execute the following command in the project root (where `docker-compose.yml` is located):
+Ensure Docker Desktop is running properly by opening it and seeing if there's any errors on the initial application window, then execute the following command in the project root (where `docker-compose.yml` is located):
 
 ```bash
 # Build images and start containers
