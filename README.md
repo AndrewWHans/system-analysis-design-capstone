@@ -88,3 +88,14 @@ docker volume rm system-analysis-design-capstone_db_data
 # 3. Prune unused volumes to free space
 docker volume prune -f
 ```
+
+---
+
+### Common Issue(s)
+
+1. If you're on a older Windows 10/11 computer that hasn't had a Windows update in a while, you may need to update the Windows Subsystem for Linux(WSL) so that Docker can work properly. To do this run the following command in a terminal:
+
+```bash
+# Update Windows Subsystem for Linux(WSL)
+wsl --update
+```
