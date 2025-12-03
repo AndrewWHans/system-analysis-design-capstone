@@ -10,7 +10,7 @@ Therabot is a diagnostic interview training platform designed for psychology stu
 
 Before starting, ensure you have the following installed on your machine:
 *   **Git** ([Download](https://git-scm.com/downloads))
-*   **Docker Desktop** ([Download](https://www.docker.com/products/docker-desktop/))
+*   **Docker** ([Download](https://www.docker.com/products/docker-desktop/))
 
 ---
 
