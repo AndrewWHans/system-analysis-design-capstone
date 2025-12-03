@@ -1,7 +1,7 @@
 services:
   # Database Service (MySQL)
   db:
-    image: mysql
+    image: mysql:9.5
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: therabot
