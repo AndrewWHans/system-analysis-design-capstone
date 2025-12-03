@@ -16,7 +16,7 @@ Before starting, ensure you have the following installed on your machine:
 
 ## Installation Instructions
 
-### 1. Download the Project via Git
+### Download the Project via Git
 
 Open your terminal (Command Prompt, PowerShell, or Terminal) and run the following commands to download the source code:
 
