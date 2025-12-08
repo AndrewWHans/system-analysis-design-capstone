@@ -5,7 +5,7 @@ import { renderChatPage, setupChatPage } from './pages/ChatPage';
 import { renderHomePage, setupHomePage } from './pages/HomePage';
 import { renderAdminPage, setupAdminPage } from './pages/AdminPage';
 import { initTheme } from './utils/theme';
-import { isAdmin } from './utils/auth';
+import { isAdmin, isLoggedIn } from './utils/auth';
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
 
@@ -15,6 +15,13 @@ initTheme();
 const navigate = (path: string) => {
   window.history.pushState({}, "", path);
   app.innerHTML = '';
+
+  // Protected Routes Guard
+  if ((path === '/chat' || path === '/admin') && !isLoggedIn()) {
+    // Redirect to login if token is missing or expired
+    navigate('/login');
+    return;
+  }
 
   if (path === '/' || path === '/home') {
     app.innerHTML = renderHomePage();
@@ -48,6 +55,11 @@ const navigate = (path: string) => {
 window.onpopstate = () => {
   navigate(window.location.pathname);
 };
+
+// Listen for forced logout events (triggered by authFetch on 401)
+window.addEventListener('auth-logout', () => {
+  navigate('/login');
+});
 
 const initialPath = window.location.pathname === '/' ? '/' : window.location.pathname;
 navigate(initialPath);

@@ -1,4 +1,4 @@
-import { getToken } from "../utils/auth";
+import { getToken, authFetch } from "../utils/auth";
 import adminHtml from "./templates/AdminPage.html?raw";
 
 interface Entity { id: number; name?: string; [key: string]: any; }
@@ -22,14 +22,18 @@ const getEndpoint = (type: string) => {
 
 const fetchData = async (endpoint: string) => {
   try {
-    const res = await fetch(`http://localhost:3000/${endpoint}`);
+    // This hits a public endpoint, so auth isn't strictly required, 
+    // but authFetch ensures consistency.
+    const res = await authFetch(`http://localhost:3000/${endpoint}`);
+    if (!res.ok) return [];
     return await res.json() as Entity[];
   } catch { return []; }
 };
 
 const fetchSingle = async (endpoint: string, id: number) => {
     try {
-        const res = await fetch(`http://localhost:3000/${endpoint}/${id}`);
+        const res = await authFetch(`http://localhost:3000/${endpoint}/${id}`);
+        if (!res.ok) return null;
         return await res.json() as Entity;
     } catch { return null; }
 }
@@ -182,11 +186,16 @@ export const setupAdminPage = (navigate: (path: string) => void) => {
         btn.addEventListener('click', async (e) => {
             const id = (e.currentTarget as HTMLElement).getAttribute('data-id');
             if(confirm('Are you sure you want to delete this item?')) {
-                await fetch(`http://localhost:3000/admin/${endpoint}/${id}`, {
-                    method: 'DELETE',
-                    headers: { 'Authorization': `Bearer ${getToken()}` }
-                });
-                loadListView();
+                try {
+                    // Use authFetch to ensure 401s trigger logout
+                    await authFetch(`http://localhost:3000/admin/${endpoint}/${id}`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${getToken()}` }
+                    });
+                    loadListView();
+                } catch (error) {
+                    console.error("Delete failed or session expired");
+                }
             }
         });
     });
@@ -248,18 +257,25 @@ export const setupAdminPage = (navigate: (path: string) => void) => {
       try {
         const url = isEditingId ? `http://localhost:3000/admin/${endpoint}/${isEditingId}` : `http://localhost:3000/admin/${endpoint}`;
         const method = isEditingId ? 'PUT' : 'POST';
-        const res = await fetch(url, {
+        
+        // Use authFetch to ensure 401s trigger logout
+        const res = await authFetch(url, {
           method: method,
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
+
         if (!res.ok) throw new Error("Failed");
         msg.textContent = "Success!";
         msg.className = "mt-4 text-center text-sm font-medium text-green-600";
         setTimeout(() => loadListView(), 500); 
-      } catch (err) {
-        msg.textContent = "Error saving entity.";
-        msg.className = "mt-4 text-center text-sm font-medium text-red-600";
+      } catch (err: any) {
+        // If authFetch throws "Session expired", it is handled globally, 
+        // but checking message here prevents "Error saving entity" overwrite
+        if (err.message !== "Session expired. Please log in again.") {
+            msg.textContent = "Error saving entity.";
+            msg.className = "mt-4 text-center text-sm font-medium text-red-600";
+        }
       }
     });
   }
