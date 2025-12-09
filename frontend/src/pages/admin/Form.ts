@@ -48,7 +48,7 @@ export class AdminForm {
             this.handleSubmit(e.target as HTMLFormElement);
         });
 
-        // 1. Initialize Tom Select for marked fields
+        // Initialize Tom Select for marked fields
         this.container.querySelectorAll('.tom-select-target').forEach((el) => {
             new TomSelect(el as HTMLSelectElement, {
                 plugins: ['remove_button', 'clear_button'],
@@ -58,7 +58,7 @@ export class AdminForm {
             });
         });
 
-        // 2. Initialize Dynamic Choice Lists (Complexity: High)
+        // Initialize dynamic choice ists
         this.container.querySelectorAll('.choice-wrapper').forEach(async (wrapper) => {
             const endpoint = wrapper.getAttribute('data-endpoint')!;
             const container = wrapper.querySelector('.choice-container')!;

@@ -85,3 +85,19 @@
   color: white;
   text-shadow: none;
 }
+
+/* Top rounded, bottom flat when open */
+.ts-wrapper.dropdown-active .ts-control {
+  border-top-left-radius: 0.5rem;
+  border-top-right-radius: 0.5rem;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.ts-wrapper.dropdown-active .ts-dropdown {
+  margin-top: 0;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  border-bottom-left-radius: 0.5rem;
+  border-bottom-right-radius: 0.5rem;
+}

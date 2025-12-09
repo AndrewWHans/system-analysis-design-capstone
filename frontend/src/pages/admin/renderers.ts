@@ -16,14 +16,21 @@ export const FieldRenderers = {
 
     select: async ({ field, value }: { field: AdminField, value: any }) => {
         const opts = await AdminApi.getAll(field.endpoint!);
-        const html = opts.map(o => `<option value="${o.id}" ${value?.id === o.id ? 'selected' : ''}>${o.name || o.id}</option>`).join('');
-        return wrap(field.label, `<select name="${field.name}" class="tom-select-target" placeholder="Select a ${field.label}..."><option value="">Select...</option>${html}</select>`);
+        let html = `<option value="">Select a ${field.label}...</option>`;
+        if (opts.length > 0) {
+            html += opts.map(o => `<option value="${o.id}" ${value?.id === o.id ? 'selected' : ''}>${o.name || o.id}</option>`).join('');
+        }
+        
+        return wrap(field.label, `<select name="${field.name}" class="tom-select-target" placeholder="Select a ${field.label}...">${html}</select>`);
     },
-    
+
     'multi-select': async ({ field, value }: { field: AdminField, value: any }) => {
         const opts = await AdminApi.getAll(field.endpoint!);
         const selected = new Set(Array.isArray(value) ? value.map((v: any) => v.id) : []);
-        const html = opts.map(o => `<option value="${o.id}" ${selected.has(o.id) ? 'selected' : ''}>${o.name || o.id}</option>`).join('');
+        let html = `<option value="" disabled>Select ${field.label}...</option>`;
+        if (opts.length > 0) {
+            html += opts.map(o => `<option value="${o.id}" ${selected.has(o.id) ? 'selected' : ''}>${o.name || o.id}</option>`).join('');
+        }
         return wrap(field.label, `<select name="${field.name}" multiple class="tom-select-target" placeholder="Select ${field.label}...">${html}</select>`);
     },
 
