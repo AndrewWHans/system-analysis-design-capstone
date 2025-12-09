@@ -17,13 +17,9 @@ import { DiagnosisRepository } from "./repository/DiagnosisRepository";
 // Services
 import { TherapistService } from "./service/TherapistService";
 import { TherapySessionService } from "./service/TherapySessionService";
-import { CopingMechanismService } from "./service/CopingMechanismService";
-import { TriggerService } from "./service/TriggerService";
-import { MoodService } from "./service/MoodService";
-import { SymptomService } from "./service/SymptomService";
-import { ConditionService } from "./service/ConditionService";
-import { DiagnosisService } from "./service/DiagnosisService";
 import { ScenarioService } from "./service/ScenarioService";
+import { SymptomService } from "./service/SymptomService"
+import { BaseService } from "./service/BaseService";
 
 // Initialize Repos
 const therapistRepo = new TherapistRepository();
@@ -39,17 +35,17 @@ const symptomRepo = new SymptomRepository();
 const conditionRepo = new ConditionRepository();
 const diagnosisRepo = new DiagnosisRepository();
 
-// Initialize services and export singleton instances
+// Initialize services
 export const services = {
     therapist: new TherapistService(therapistRepo),
     session: new TherapySessionService(sessionRepo, nodeRepo, messageRepo, choiceRepo, scenarioRepo),
     scenario: new ScenarioService(scenarioRepo, nodeRepo, choiceRepo),
-    coping: new CopingMechanismService(copingRepo),
-    trigger: new TriggerService(triggerRepo),
-    mood: new MoodService(moodRepo),
     symptom: new SymptomService(symptomRepo),
-    condition: new ConditionService(conditionRepo),
-    diagnosis: new DiagnosisService(diagnosisRepo)
+    coping: new BaseService(copingRepo, "Coping Mechanism"),
+    trigger: new BaseService(triggerRepo, "Trigger"),
+    mood: new BaseService(moodRepo, "Mood"),
+    condition: new BaseService(conditionRepo, "Condition"),
+    diagnosis: new BaseService(diagnosisRepo, "Diagnosis")
 };
 
 export const initializeDatabase = async () => {

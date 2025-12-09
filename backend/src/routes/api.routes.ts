@@ -32,26 +32,26 @@ router.post("/sessions", async (req, res, next) => {
     } catch (e) { next(e); }
 });
 
-// Public read-only routes
-// Helper for simple gets
+// Public read-only routes helper
 const getHandler = (promise: Promise<any>) => async (req: any, res: any, next: any) => {
     try { res.json(await promise); } catch (e) { next(e); }
 };
 
-router.get("/coping-mechanisms", (req, res, next) => getHandler(services.coping.getAllCopingMechanisms())(req, res, next));
-router.get("/triggers", (req, res, next) => getHandler(services.trigger.getAllTriggers())(req, res, next));
-router.get("/moods", (req, res, next) => getHandler(services.mood.getAllMoods())(req, res, next));
-router.get("/symptoms", (req, res, next) => getHandler(services.symptom.getAllSymptoms())(req, res, next));
-router.get("/conditions", (req, res, next) => getHandler(services.condition.getAllConditions())(req, res, next));
-router.get("/diagnoses", (req, res, next) => getHandler(services.diagnosis.getAllDiagnoses())(req, res, next));
+// General routes
+router.get("/coping-mechanisms", (req, res, next) => getHandler(services.coping.getAll())(req, res, next));
+router.get("/triggers", (req, res, next) => getHandler(services.trigger.getAll())(req, res, next));
+router.get("/moods", (req, res, next) => getHandler(services.mood.getAll())(req, res, next));
+router.get("/symptoms", (req, res, next) => getHandler(services.symptom.getAll())(req, res, next));
+router.get("/conditions", (req, res, next) => getHandler(services.condition.getAll())(req, res, next));
+router.get("/diagnoses", (req, res, next) => getHandler(services.diagnosis.getAll())(req, res, next));
 
-// Public read single
-router.get("/coping-mechanisms/:id", async (req, res, next) => { try { res.json(await services.coping.getCopingMechanismByID(Number(req.params.id))); } catch (e) { next(e); } });
-router.get("/triggers/:id", async (req, res, next) => { try { res.json(await services.trigger.getTriggerByID(Number(req.params.id))); } catch (e) { next(e); } });
-router.get("/moods/:id", async (req, res, next) => { try { res.json(await services.mood.getMoodByID(Number(req.params.id))); } catch (e) { next(e); } });
-router.get("/symptoms/:id", async (req, res, next) => { try { res.json(await services.symptom.getSymptomByID(Number(req.params.id))); } catch (e) { next(e); } });
-router.get("/conditions/:id", async (req, res, next) => { try { res.json(await services.condition.getConditionByID(Number(req.params.id))); } catch (e) { next(e); } });
-router.get("/diagnoses/:id", async (req, res, next) => { try { res.json(await services.diagnosis.getDiagnosisByID(Number(req.params.id))); } catch (e) { next(e); } });
+// Specific id routes
+router.get("/coping-mechanisms/:id", async (req, res, next) => { try { res.json(await services.coping.getByID(Number(req.params.id))); } catch (e) { next(e); } });
+router.get("/triggers/:id", async (req, res, next) => { try { res.json(await services.trigger.getByID(Number(req.params.id))); } catch (e) { next(e); } });
+router.get("/moods/:id", async (req, res, next) => { try { res.json(await services.mood.getByID(Number(req.params.id))); } catch (e) { next(e); } });
+router.get("/symptoms/:id", async (req, res, next) => { try { res.json(await services.symptom.getByID(Number(req.params.id))); } catch (e) { next(e); } });
+router.get("/conditions/:id", async (req, res, next) => { try { res.json(await services.condition.getByID(Number(req.params.id))); } catch (e) { next(e); } });
+router.get("/diagnoses/:id", async (req, res, next) => { try { res.json(await services.diagnosis.getByID(Number(req.params.id))); } catch (e) { next(e); } });
 
 // Admin namespace
 router.use("/admin", authenticateToken, requireAdmin, adminRouter);
