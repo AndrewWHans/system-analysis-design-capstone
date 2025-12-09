@@ -14,7 +14,8 @@ const entities: RouteConfig[] = [
     { path: "/moods", service: services.mood },
     { path: "/symptoms", service: services.symptom },
     { path: "/conditions", service: services.condition },
-    { path: "/diagnoses", service: services.diagnosis }
+    { path: "/diagnoses", service: services.diagnosis },
+    { path: "/dialogue-nodes", service: services.dialogueNode }
 ];
 
 entities.forEach(entity => {

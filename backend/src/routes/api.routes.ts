@@ -44,6 +44,7 @@ router.get("/moods", (req, res, next) => getHandler(services.mood.getAll())(req,
 router.get("/symptoms", (req, res, next) => getHandler(services.symptom.getAll())(req, res, next));
 router.get("/conditions", (req, res, next) => getHandler(services.condition.getAll())(req, res, next));
 router.get("/diagnoses", (req, res, next) => getHandler(services.diagnosis.getAll())(req, res, next));
+router.get("/dialogue-nodes", (req, res, next) => getHandler(services.dialogueNode.getAll())(req, res, next));
 
 // Specific id routes
 router.get("/coping-mechanisms/:id", async (req, res, next) => { try { res.json(await services.coping.getByID(Number(req.params.id))); } catch (e) { next(e); } });
@@ -52,6 +53,7 @@ router.get("/moods/:id", async (req, res, next) => { try { res.json(await servic
 router.get("/symptoms/:id", async (req, res, next) => { try { res.json(await services.symptom.getByID(Number(req.params.id))); } catch (e) { next(e); } });
 router.get("/conditions/:id", async (req, res, next) => { try { res.json(await services.condition.getByID(Number(req.params.id))); } catch (e) { next(e); } });
 router.get("/diagnoses/:id", async (req, res, next) => { try { res.json(await services.diagnosis.getByID(Number(req.params.id))); } catch (e) { next(e); } });
+router.get("/dialogue-nodes/:id", async (req, res, next) => { try { res.json(await services.dialogueNode.getByID(Number(req.params.id))); } catch (e) { next(e); } });
 
 // Admin namespace
 router.use("/admin", authenticateToken, requireAdmin, adminRouter);

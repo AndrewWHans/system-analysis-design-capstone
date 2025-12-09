@@ -20,7 +20,7 @@ import { TherapySessionService } from "./service/TherapySessionService";
 import { ScenarioService } from "./service/ScenarioService";
 import { SymptomService } from "./service/SymptomService"
 import { BaseService } from "./service/BaseService";
-
+import { DialogueNodeService } from "./service/DialogueNodeService";
 // Initialize Repos
 const therapistRepo = new TherapistRepository();
 const scenarioRepo = new ScenarioRepository();
@@ -45,7 +45,8 @@ export const services = {
     trigger: new BaseService(triggerRepo, "Trigger"),
     mood: new BaseService(moodRepo, "Mood"),
     condition: new BaseService(conditionRepo, "Condition"),
-    diagnosis: new BaseService(diagnosisRepo, "Diagnosis")
+    diagnosis: new BaseService(diagnosisRepo, "Diagnosis"),
+    dialogueNode: new DialogueNodeService(nodeRepo)
 };
 
 export const initializeDatabase = async () => {

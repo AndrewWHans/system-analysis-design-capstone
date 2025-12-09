@@ -32,8 +32,15 @@ const renderTable = (data: Entity[]) => {
     if (data.length === 0) return `<div class="text-center py-10 text-gray-500">No items found. Create one!</div>`;
     
     const rows = data.map(item => {
-        // Fallback for Diagnosis/Scenario which might not have a direct 'name' property
-        const displayName = item.name || (item.condition ? `${item.condition.name} Diagnosis` : 'Unnamed');
+        // Fallback for Diagnosis/Scenario/DialogueNode which might not have a direct 'name' property
+        let displayName = item.name;
+        
+        if (!displayName) {
+             if (item.condition) displayName = `${item.condition.name} Diagnosis`;
+             else if (item.botText) displayName = `"${item.botText.substring(0, 50)}..."`; // For DialogueNodes
+             else displayName = 'Unnamed';
+        }
+
         return `
         <tr class="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
             <td class="py-3 px-4 text-gray-800 dark:text-gray-200 font-medium">#${item.id}</td>
@@ -73,6 +80,21 @@ const generateInputHtml = (field: AdminField) => {
             </div>`;
     }
 
+    // New Choice List Logic
+    if (field.type === 'choice-list') {
+        return `
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">${field.label}</label>
+                <div id="choice-list-container" class="space-y-3 mb-3">
+                    <!-- Dynamic Choices appear here -->
+                </div>
+                <button type="button" id="btn-add-choice" class="text-sm bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 px-3 py-1 rounded transition text-black dark:text-white">
+                    + Add Choice
+                </button>
+            </div>
+        `;
+    }
+
     return `
         <div class="mb-4">
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">${field.label}</label>
@@ -99,14 +121,12 @@ const renderDynamicForm = (config: EntityConfig) => {
 
 // --- Form Population Logic ---
 const prepareForm = async (config: EntityConfig, data: Entity | null) => {
-    // 1. Fetch options for select/multi-select fields
     for (const field of config.fields) {
-        if (field.endpoint) {
+        if (field.endpoint && field.type !== 'choice-list') {
             const selectEl = document.getElementById(field.name) as HTMLSelectElement;
             if (selectEl) {
                 const options = await fetchData(field.endpoint);
                 
-                // Determine which options are selected
                 let selectedIds = new Set<number>();
                 if (data && data[field.name]) {
                     if (Array.isArray(data[field.name])) {
@@ -117,11 +137,52 @@ const prepareForm = async (config: EntityConfig, data: Entity | null) => {
                 }
 
                 selectEl.innerHTML = options.map(opt => 
-                    `<option value="${opt.id}" ${selectedIds.has(opt.id) ? 'selected' : ''}>${opt.name}</option>`
+                    `<option value="${opt.id}" ${selectedIds.has(opt.id) ? 'selected' : ''}>${opt.name || (opt as any).botText?.substring(0,30) + '...' || 'ID '+opt.id}</option>`
                 ).join('');
             }
+        } else if (field.type === 'choice-list') {
+            // Logic for Dialogue Node Choices
+            const container = document.getElementById('choice-list-container')!;
+            const addBtn = document.getElementById('btn-add-choice')!;
+            
+            // 1. Fetch potential "Next Nodes" to populate the dropdowns
+            const allNodes = field.endpoint ? await fetchData(field.endpoint) : [];
+            const nodeOptions = allNodes.map(n => 
+                `<option value="${n.id}">${n.id} - ${(n as any).botText?.substring(0, 30)}...</option>`
+            ).join('');
+
+            // Helper to add a row to the DOM
+            const addRow = (text: string = '', nextNodeId: string = '') => {
+                const row = document.createElement('div');
+                row.className = "flex gap-2 items-center choice-row";
+                row.innerHTML = `
+                    <input type="text" placeholder="Choice Text" class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-800 dark:text-white text-sm" value="${text}">
+                    <select class="w-1/3 px-3 py-2 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-800 dark:text-white text-sm">
+                        <option value="">Link to Node...</option>
+                        ${nodeOptions}
+                    </select>
+                    <button type="button" class="text-red-500 hover:text-red-700 p-2 font-bold">&times;</button>
+                `;
+                
+                if(nextNodeId) (row.querySelector('select') as HTMLSelectElement).value = nextNodeId;
+                
+                // Remove row event
+                row.querySelector('button')!.addEventListener('click', () => row.remove());
+                container.appendChild(row);
+            };
+
+            addBtn.addEventListener('click', () => addRow());
+
+            // 2. Populate existing choices if editing
+            if (data && data[field.name] && Array.isArray(data[field.name])) {
+                data[field.name].forEach((choice: any) => {
+                    // Expecting choice structure: { text: "...", nextNode: { id: 1 } }
+                    addRow(choice.text, choice.nextNode?.id);
+                });
+            }
+
         } else if (data && data[field.name] !== undefined) {
-            // 2. Fill basic text/number inputs
+            // Fill basic text/number inputs
             const inputEl = document.getElementById(field.name) as HTMLInputElement;
             if (inputEl) inputEl.value = data[field.name];
         }
@@ -134,7 +195,23 @@ const extractPayload = (config: EntityConfig, form: HTMLFormElement) => {
     const payload: any = {};
 
     config.fields.forEach(field => {
-        if (field.type === 'text') {
+        if (field.type === 'choice-list') {
+             // Extract choices manually from DOM
+             const rows = document.querySelectorAll('.choice-row');
+             const choices: any[] = [];
+             rows.forEach(row => {
+                 const text = (row.querySelector('input') as HTMLInputElement).value;
+                 const nextNodeId = (row.querySelector('select') as HTMLSelectElement).value;
+                 
+                 if (text && nextNodeId) {
+                     choices.push({
+                         text: text,
+                         nextNode: { id: Number(nextNodeId) }
+                     });
+                 }
+             });
+             payload[field.name] = choices;
+        } else if (field.type === 'text') {
             payload[field.name] = formData.get(field.name);
         } else if (field.type === 'number') {
             payload[field.name] = Number(formData.get(field.name));
@@ -237,6 +314,7 @@ export const setupAdminPage = (navigate: (path: string) => void) => {
                 msg.className = "mt-4 text-center text-sm font-medium text-green-600";
                 setTimeout(loadListView, 500);
             } catch (err) {
+                console.error(err);
                 msg.textContent = "Error saving entity.";
                 msg.className = "mt-4 text-center text-sm font-medium text-red-600";
             }

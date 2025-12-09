@@ -1,21 +1,19 @@
-// Define the types of inputs our admin panel supports
-export type FieldType = 'text' | 'number' | 'select' | 'multi-select';
+export type FieldType = 'text' | 'number' | 'select' | 'multi-select' | 'choice-list';
 
 export interface AdminField {
-    name: string;       // Property name in API (e.g., 'lifeImpact')
-    label: string;      // Display label (e.g., 'Life Impact')
+    name: string;
+    label: string;
     type: FieldType;
-    endpoint?: string;  // If select/multi, where to fetch options (e.g., 'triggers')
+    endpoint?: string;
     required?: boolean;
 }
 
 export interface EntityConfig {
-    endpoint: string;   // API endpoint (e.g., 'coping-mechanisms')
-    label: string;      // Display name (e.g., 'Coping Mechanisms')
+    endpoint: string;
+    label: string;
     fields: AdminField[];
 }
 
-// Reusable fields
 const nameField: AdminField = { name: 'name', label: 'Name', type: 'text', required: true };
 
 export const ENTITY_CONFIGS: Record<string, EntityConfig> = {
@@ -62,6 +60,14 @@ export const ENTITY_CONFIGS: Record<string, EntityConfig> = {
         fields: [
             { name: 'condition', label: 'Condition', type: 'select', endpoint: 'conditions', required: true },
             { name: 'symptoms', label: 'Confirming Symptoms', type: 'multi-select', endpoint: 'symptoms' }
+        ]
+    },
+    DialogueNode: {
+        endpoint: 'dialogue-nodes',
+        label: 'Dialogue Nodes',
+        fields: [
+            { name: 'botText', label: 'Bot Message (What the patient says)', type: 'text', required: true },
+            { name: 'therapistChoices', label: 'Therapist Choices', type: 'choice-list', endpoint: 'dialogue-nodes' }
         ]
     }
 };
