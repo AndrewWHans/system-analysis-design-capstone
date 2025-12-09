@@ -1,47 +1,33 @@
-import { Router, Request, Response, NextFunction } from "express";
+import { Router } from "express";
 import { services } from "../container";
+import { BaseController } from "../controller/BaseController";
+import { catchAsync } from "../utils/catchAsync";
 
 const router = Router();
 
-interface RouteConfig {
-    path: string;
-    service: any;
-}
+// Initialize Controllers
+const copingCtrl = new BaseController(services.coping);
+const triggerCtrl = new BaseController(services.trigger);
+const moodCtrl = new BaseController(services.mood);
+const symptomCtrl = new BaseController(services.symptom);
+const conditionCtrl = new BaseController(services.condition);
+const diagnosisCtrl = new BaseController(services.diagnosis);
+const nodeCtrl = new BaseController(services.dialogueNode);
 
-const entities: RouteConfig[] = [
-    { path: "/coping-mechanisms", service: services.coping },
-    { path: "/triggers", service: services.trigger },
-    { path: "/moods", service: services.mood },
-    { path: "/symptoms", service: services.symptom },
-    { path: "/conditions", service: services.condition },
-    { path: "/diagnoses", service: services.diagnosis },
-    { path: "/dialogue-nodes", service: services.dialogueNode }
-];
+// Helper to register standard CRUD routes
+const registerCrud = (path: string, controller: BaseController<any>) => {
+    router.post(path, catchAsync(controller.create));
+    router.put(`${path}/:id`, catchAsync(controller.update));
+    router.delete(`${path}/:id`, catchAsync(controller.delete));
+};
 
-entities.forEach(entity => {
-    // Create
-    router.post(entity.path, async (req: Request, res: Response, next: NextFunction) => {
-        try {
-            const result = await entity.service.create(req.body);
-            res.status(201).json(result);
-        } catch (e) { next(e); }
-    });
-
-    // Update
-    router.put(`${entity.path}/:id`, async (req: Request, res: Response, next: NextFunction) => {
-        try {
-            await entity.service.update(Number(req.params.id), req.body);
-            res.json({ message: "Updated successfully" });
-        } catch (e) { next(e); }
-    });
-
-    // Delete
-    router.delete(`${entity.path}/:id`, async (req: Request, res: Response, next: NextFunction) => {
-        try {
-            await entity.service.delete(Number(req.params.id));
-            res.json({ message: "Deleted successfully" });
-        } catch (e) { next(e); }
-    });
-});
+// Explicit Route Definitions
+registerCrud("/coping-mechanisms", copingCtrl);
+registerCrud("/triggers", triggerCtrl);
+registerCrud("/moods", moodCtrl);
+registerCrud("/symptoms", symptomCtrl);
+registerCrud("/conditions", conditionCtrl);
+registerCrud("/diagnoses", diagnosisCtrl);
+registerCrud("/dialogue-nodes", nodeCtrl);
 
 export default router;

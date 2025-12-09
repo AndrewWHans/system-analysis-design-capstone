@@ -2,58 +2,56 @@ import { Router } from "express";
 import { services } from "../container";
 import { authenticateToken, requireAdmin } from "../middleware/authMiddleware";
 import adminRouter from "./admin.routes";
+import { catchAsync } from "../utils/catchAsync";
+import { AuthController } from "../controller/AuthController";
+import { SessionController } from "../controller/SessionController";
+import { BaseController } from "../controller/BaseController";
 
 const router = Router();
 
-// Auth routes
-router.post("/register", async (req, res, next) => {
-    try {
-        const { username, email, password } = req.body;
-        const newTherapist = await services.therapist.register(username, email, password);
-        const token = await services.therapist.login(username || email, password);
-        res.status(201).json({ message: "Registration successful", token, user: { id: newTherapist.id, username: newTherapist.username } });
-    } catch (e) { next(e); }
-});
+// Initialize Controllers
+const authController = new AuthController(services.therapist);
+const sessionController = new SessionController(services.session);
 
-router.post("/login", async (req, res, next) => {
-    try {
-        const { username, password } = req.body;
-        const token = await services.therapist.login(username, password);
-        res.json({ token });
-    } catch (e) { next(e); }
-});
+// Generic Controllers for Read-Only access
+const copingCtrl = new BaseController(services.coping);
+const triggerCtrl = new BaseController(services.trigger);
+const moodCtrl = new BaseController(services.mood);
+const symptomCtrl = new BaseController(services.symptom);
+const conditionCtrl = new BaseController(services.condition);
+const diagnosisCtrl = new BaseController(services.diagnosis);
+const nodeCtrl = new BaseController(services.dialogueNode);
 
-// Session routes
-router.post("/sessions", async (req, res, next) => {
-    try {
-        const { therapistId, scenarioId } = req.body;
-        const session = await services.session.startSession(therapistId, scenarioId);
-        res.status(201).json(session);
-    } catch (e) { next(e); }
-});
+// --- Routes ---
 
-// Public read-only routes helper
-const getHandler = (promise: Promise<any>) => async (req: any, res: any, next: any) => {
-    try { res.json(await promise); } catch (e) { next(e); }
-};
+// Auth
+router.post("/register", catchAsync(authController.register));
+router.post("/login", catchAsync(authController.login));
 
-// General routes
-router.get("/coping-mechanisms", (req, res, next) => getHandler(services.coping.getAll())(req, res, next));
-router.get("/triggers", (req, res, next) => getHandler(services.trigger.getAll())(req, res, next));
-router.get("/moods", (req, res, next) => getHandler(services.mood.getAll())(req, res, next));
-router.get("/symptoms", (req, res, next) => getHandler(services.symptom.getAll())(req, res, next));
-router.get("/conditions", (req, res, next) => getHandler(services.condition.getAll())(req, res, next));
-router.get("/diagnoses", (req, res, next) => getHandler(services.diagnosis.getAll())(req, res, next));
-router.get("/dialogue-nodes", (req, res, next) => getHandler(services.dialogueNode.getAll())(req, res, next));
+// Session
+router.post("/sessions", catchAsync(sessionController.startSession));
 
-// Specific id routes
-router.get("/coping-mechanisms/:id", async (req, res, next) => { try { res.json(await services.coping.getByID(Number(req.params.id))); } catch (e) { next(e); } });
-router.get("/triggers/:id", async (req, res, next) => { try { res.json(await services.trigger.getByID(Number(req.params.id))); } catch (e) { next(e); } });
-router.get("/moods/:id", async (req, res, next) => { try { res.json(await services.mood.getByID(Number(req.params.id))); } catch (e) { next(e); } });
-router.get("/symptoms/:id", async (req, res, next) => { try { res.json(await services.symptom.getByID(Number(req.params.id))); } catch (e) { next(e); } });
-router.get("/conditions/:id", async (req, res, next) => { try { res.json(await services.condition.getByID(Number(req.params.id))); } catch (e) { next(e); } });
-router.get("/diagnoses/:id", async (req, res, next) => { try { res.json(await services.diagnosis.getByID(Number(req.params.id))); } catch (e) { next(e); } });
-router.get("/dialogue-nodes/:id", async (req, res, next) => { try { res.json(await services.dialogueNode.getByID(Number(req.params.id))); } catch (e) { next(e); } });
+// Public Read-Only Resources
+router.get("/coping-mechanisms", catchAsync(copingCtrl.getAll));
+router.get("/coping-mechanisms/:id", catchAsync(copingCtrl.getById));
+
+router.get("/triggers", catchAsync(triggerCtrl.getAll));
+router.get("/triggers/:id", catchAsync(triggerCtrl.getById));
+
+router.get("/moods", catchAsync(moodCtrl.getAll));
+router.get("/moods/:id", catchAsync(moodCtrl.getById));
+
+router.get("/symptoms", catchAsync(symptomCtrl.getAll));
+router.get("/symptoms/:id", catchAsync(symptomCtrl.getById));
+
+router.get("/conditions", catchAsync(conditionCtrl.getAll));
+router.get("/conditions/:id", catchAsync(conditionCtrl.getById));
+
+router.get("/diagnoses", catchAsync(diagnosisCtrl.getAll));
+router.get("/diagnoses/:id", catchAsync(diagnosisCtrl.getById));
+
+router.get("/dialogue-nodes", catchAsync(nodeCtrl.getAll));
+router.get("/dialogue-nodes/:id", catchAsync(nodeCtrl.getById));
 
 // Admin namespace
 router.use("/admin", authenticateToken, requireAdmin, adminRouter);
