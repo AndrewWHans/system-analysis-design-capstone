@@ -12,11 +12,12 @@ export const setupAdminPage = (navigate: (path: string) => void) => {
     const createBtn = document.getElementById('btn-create-new')!;
 
     const loadList = async () => {
+        // Set title and reset UI
         document.getElementById('page-title')!.textContent = AdminConfig[currentType].label;
         createBtn.style.display = 'block';
         contentDiv.innerHTML = `<div class="text-center py-10 text-gray-500">Loading...</div>`;
         
-        // Update Nav UI
+        // Update nav highlights
         document.querySelectorAll('.nav-item').forEach(b => {
             const active = (b as HTMLElement).dataset.target === currentType;
             b.classList.toggle('bg-gray-100', active);
@@ -24,10 +25,66 @@ export const setupAdminPage = (navigate: (path: string) => void) => {
             b.classList.toggle('font-bold', active);
         });
 
-        const data = await AdminApi.getAll(AdminConfig[currentType].endpoint);
-        new AdminTable(contentDiv, loadForm, async (id) => {
-            if (confirm('Delete?')) { await AdminApi.delete(AdminConfig[currentType].endpoint, id); loadList(); }
-        }).render(data);
+        // Fetch data
+        let data = await AdminApi.getAll(AdminConfig[currentType].endpoint);
+
+        // Sort the IDS sequentially (Ascending)
+        data.sort((a, b) => a.id - b.id);
+
+        // Setup search interface
+        // We split the contentDiv: top part for search, bottom part for table
+        contentDiv.innerHTML = `
+            <div class="mb-6 relative">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                </div>
+                <input 
+                    type="text" 
+                    id="admin-search-input" 
+                    placeholder="Search by ID, Name, or Content..." 
+                    class="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition"
+                >
+            </div>
+            <div id="table-wrapper"></div>
+        `;
+
+        const tableWrapper = document.getElementById('table-wrapper')!;
+        const searchInput = document.getElementById('admin-search-input') as HTMLInputElement;
+
+        // Define render logic for table
+        const renderTable = (items: any[]) => {
+            new AdminTable(tableWrapper, loadForm, async (id) => {
+                if (confirm('Delete?')) { 
+                    await AdminApi.delete(AdminConfig[currentType].endpoint, id); 
+                    loadList(); 
+                }
+            }).render(items);
+        };
+
+        // Define filter logic
+        const filterData = (query: string) => {
+            const lowerQuery = query.toLowerCase();
+            return data.filter(item => {
+                const idMatch = item.id.toString().includes(lowerQuery);
+                const nameMatch = item.name?.toLowerCase().includes(lowerQuery);
+                const botTextMatch = item.botText?.toLowerCase().includes(lowerQuery);
+                const conditionMatch = item.condition?.name?.toLowerCase().includes(lowerQuery);
+
+                return idMatch || nameMatch || botTextMatch || conditionMatch;
+            });
+        };
+
+        // Attach search listener
+        searchInput.addEventListener('input', (e) => {
+            const val = (e.target as HTMLInputElement).value;
+            const filtered = filterData(val);
+            renderTable(filtered);
+        });
+
+        // Initial render
+        renderTable(data);
     };
 
     const loadForm = (id: number | null) => {

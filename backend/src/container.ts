@@ -29,6 +29,7 @@ import { SymptomService } from "./service/SymptomService"
 import { BaseService } from "./service/BaseService";
 import { DialogueNodeService } from "./service/DialogueNodeService";
 import { SimulationService } from "./service/SimulationService";
+import { SeederService } from "./service/SeederService";
 
 // Initialize Repositories
 const therapistRepo = new TherapistRepository();
@@ -48,6 +49,7 @@ const conditionRepo = new BaseRepository(ConditionEntity, "Condition", ["symptom
 
 // Initialize Services
 const simulationService = new SimulationService();
+const seederService = new SeederService(triggerRepo, moodRepo, copingRepo, symptomRepo, conditionRepo, diagnosisRepo);
 
 export const services = {
     therapist: new TherapistService(therapistRepo),
@@ -59,7 +61,8 @@ export const services = {
     mood: new BaseService(moodRepo, "Mood"),
     condition: new BaseService(conditionRepo, "Condition"),
     diagnosis: new BaseService(diagnosisRepo, "Diagnosis"),
-    dialogueNode: new DialogueNodeService(nodeRepo, choiceRepo)
+    dialogueNode: new DialogueNodeService(nodeRepo, choiceRepo),
+    seeder: seederService
 };
 
 export const initializeDatabase = async () => {
@@ -69,6 +72,7 @@ export const initializeDatabase = async () => {
             await AppDataSource.initialize();
             console.log("Database connected via TypeORM");
             await services.therapist.createAdmin();
+            await services.seeder.seed();
             break;
         } catch (error) {
             console.log(`Database connection failed. Retrying in 5s... (${retries} attempts left)`);

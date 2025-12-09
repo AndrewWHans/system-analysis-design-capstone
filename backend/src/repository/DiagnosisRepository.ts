@@ -10,13 +10,13 @@ export class DiagnosisRepository extends BaseRepository<DiagnosisEntity> {
     async findByName(conditionName: string): Promise<DiagnosisEntity> {
         const entity = await this.repo.findOne({ 
             where: { condition: { name: conditionName } },
-            relations: ["condition", "symptoms"] 
+            relations: ["condition", "condition.symptoms"] 
         });
         if (!entity) throw new NotFoundError(`Diagnosis for condition '${conditionName}' not found`);
         return entity;
     }
 
     async findAll(): Promise<DiagnosisEntity[]> {
-        return await this.repo.find({ relations: ["condition", "symptoms"] });
+        return await this.repo.find({ relations: ["condition", "condition.symptoms"] });
     }
 }

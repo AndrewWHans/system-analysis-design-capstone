@@ -1,6 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, ManyToOne, ManyToMany, JoinTable, JoinColumn } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from "typeorm";
 import { ConditionEntity } from "./ConditionEntity";
-import { SymptomEntity } from "./SymptomEntity";
 
 @Entity({ name: "diagnoses" })
 export class DiagnosisEntity {
@@ -10,8 +9,4 @@ export class DiagnosisEntity {
     @ManyToOne(() => ConditionEntity)
     @JoinColumn({ name: "condition_id" })
     condition!: ConditionEntity;
-
-    @ManyToMany(() => SymptomEntity)
-    @JoinTable({ name: "diagnosis_symptoms" })
-    symptoms!: SymptomEntity[];
 }

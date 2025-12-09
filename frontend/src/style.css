@@ -101,3 +101,12 @@
   border-bottom-left-radius: 0.5rem;
   border-bottom-right-radius: 0.5rem;
 }
+
+/* Make ALL TomSelect controls follow dark mode */
+.dark .ts-wrapper .ts-control {
+  background-image: none;
+  box-shadow: none;
+  background-color: #1f2937 !important; /* gray-800 */
+  border-color: #374151 !important;     /* gray-700 */
+  color: #f9fafb !important;            /* gray-50 */
+}

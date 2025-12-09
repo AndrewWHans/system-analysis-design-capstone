@@ -46,8 +46,7 @@ export const AdminConfig: Record<string, EntityConfig> = {
         endpoint: 'diagnoses',
         label: 'Diagnoses',
         fields: [
-            { name: 'condition', label: 'Condition', type: 'select', endpoint: 'conditions', required: true },
-            { name: 'symptoms', label: 'Confirming Symptoms', type: 'multi-select', endpoint: 'symptoms' }
+            { name: 'condition', label: 'Condition', type: 'select', endpoint: 'conditions', required: true }
         ]
     },
     DialogueNode: {
