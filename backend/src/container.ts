@@ -1,17 +1,24 @@
 import { AppDataSource } from "./data-source";
+import { BaseRepository } from "./repository/BaseRepository";
 
-// Repositories
+// Entities
+import { TherapistEntity } from "./entity/TherapistEntity";
+import { ScenarioEntity } from "./entity/ScenarioEntity";
+import { TherapySessionEntity } from "./entity/TherapySessionEntity";
+import { MessageEntity } from "./entity/MessageEntity";
+import { DialogueNodeEntity } from "./entity/DialogueNodeEntity";
+import { TherapistChoiceEntity } from "./entity/TherapistChoiceEntity";
+import { CopingMechanismEntity } from "./entity/CopingMechanismEntity";
+import { TriggerEntity } from "./entity/TriggerEntity";
+import { MoodEntity } from "./entity/MoodEntity";
+import { SymptomEntity } from "./entity/SymptomEntity";
+import { ConditionEntity } from "./entity/ConditionEntity";
+import { DiagnosisEntity } from "./entity/DiagnosisEntity";
+
+// Custom Repositories (Keep these as they have custom logic)
 import { TherapistRepository } from "./repository/TherapistRepository";
-import { ScenarioRepository } from "./repository/ScenarioRepository";
 import { TherapySessionRepository } from "./repository/TherapySessionRepository";
-import { MessageRepository } from "./repository/MessageRepository";
-import { DialogueNodeRepository } from "./repository/DialogueNodeRepository";
 import { TherapistChoiceRepository } from "./repository/TherapistChoiceRepository";
-import { CopingMechanismRepository } from "./repository/CopingMechanismRepository";
-import { TriggerRepository } from "./repository/TriggerRepository";
-import { MoodRepository } from "./repository/MoodRepository";
-import { SymptomRepository } from "./repository/SymptomRepository";
-import { ConditionRepository } from "./repository/ConditionRepository";
 import { DiagnosisRepository } from "./repository/DiagnosisRepository";
 
 // Services
@@ -22,19 +29,22 @@ import { SymptomService } from "./service/SymptomService"
 import { BaseService } from "./service/BaseService";
 import { DialogueNodeService } from "./service/DialogueNodeService";
 
-// Initialize Repos
+// Initialize Repositories
+// Custom Repositories (Complex logic)
 const therapistRepo = new TherapistRepository();
-const scenarioRepo = new ScenarioRepository();
 const sessionRepo = new TherapySessionRepository();
-const messageRepo = new MessageRepository();
-const nodeRepo = new DialogueNodeRepository();
 const choiceRepo = new TherapistChoiceRepository();
-const copingRepo = new CopingMechanismRepository();
-const triggerRepo = new TriggerRepository();
-const moodRepo = new MoodRepository();
-const symptomRepo = new SymptomRepository();
-const conditionRepo = new ConditionRepository();
 const diagnosisRepo = new DiagnosisRepository();
+
+// Generic Repositories
+const scenarioRepo = new BaseRepository(ScenarioEntity, "Scenario", ["rootDialogueNode", "correctDiagnosis"]);
+const messageRepo = new BaseRepository(MessageEntity, "Message");
+const nodeRepo = new BaseRepository(DialogueNodeEntity, "Dialogue Node");
+const copingRepo = new BaseRepository(CopingMechanismEntity, "Coping Mechanism");
+const triggerRepo = new BaseRepository(TriggerEntity, "Trigger");
+const moodRepo = new BaseRepository(MoodEntity, "Mood");
+const symptomRepo = new BaseRepository(SymptomEntity, "Symptom", ["triggers", "moods", "copingMechanisms"]);
+const conditionRepo = new BaseRepository(ConditionEntity, "Condition", ["symptoms"]);
 
 // Initialize services
 export const services = {

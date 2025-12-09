@@ -1,13 +1,13 @@
-import { ScenarioRepository } from "../repository/ScenarioRepository";
-import { DialogueNodeRepository } from "../repository/DialogueNodeRepository";
+import { BaseRepository } from "../repository/BaseRepository";
 import { ScenarioEntity } from "../entity/ScenarioEntity";
+import { DialogueNodeEntity } from "../entity/DialogueNodeEntity";
 import { DiagnosisEntity } from "../entity/DiagnosisEntity";
 import { BadRequestError } from "../utils/AppError";
 
 export class ScenarioService {
     constructor(
-        private scenarioRepository: ScenarioRepository,
-        private dialogueNodeRepository: DialogueNodeRepository
+        private scenarioRepository: BaseRepository<ScenarioEntity>,
+        private dialogueNodeRepository: BaseRepository<DialogueNodeEntity>
     ) {}
 
     async getScenarioByID(scenarioID: number): Promise<ScenarioEntity> {
@@ -29,7 +29,6 @@ export class ScenarioService {
     ): Promise<ScenarioEntity> {
         if (!name.trim()) throw new BadRequestError("Name is required");
 
-        // Create a root node placeholder
         const placeholderRoot = this.dialogueNodeRepository.create({
             botText: "Start of scenario",
             therapistChoices: []

@@ -1,21 +1,20 @@
 import { SymptomEntity } from "../entity/SymptomEntity";
-import { SymptomRepository } from "../repository/SymptomRepository";
+import { BaseRepository } from "../repository/BaseRepository";
 import { BadRequestError } from "../utils/AppError";
 import { BaseService } from "./BaseService";
 import { DeepPartial } from "typeorm";
 
 export class SymptomService extends BaseService<SymptomEntity> {
-    constructor(repo: SymptomRepository) {
+    // Changed constructor to accept BaseRepository
+    constructor(repo: BaseRepository<SymptomEntity>) {
         super(repo, "Symptom");
     }
 
-    // Override create to add specific validation
     async create(data: DeepPartial<SymptomEntity>): Promise<SymptomEntity> {
         this.validateSymptomData(data);
         return super.create(data);
     }
 
-    // Override update to add specific validation
     async update(id: number, data: DeepPartial<SymptomEntity>): Promise<void> {
         this.validateSymptomData(data);
         return super.update(id, data);

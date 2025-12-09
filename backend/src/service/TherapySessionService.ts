@@ -1,10 +1,10 @@
 import { TherapySessionRepository } from "../repository/TherapySessionRepository";
 import { BaseRepository } from "../repository/BaseRepository";
-import { ScenarioRepository } from "../repository/ScenarioRepository";
 import { MessageEntity } from "../entity/MessageEntity";
 import { TherapySessionEntity } from "../entity/TherapySessionEntity";
 import { DialogueNodeEntity } from "../entity/DialogueNodeEntity";
 import { TherapistChoiceEntity } from "../entity/TherapistChoiceEntity";
+import { ScenarioEntity } from "../entity/ScenarioEntity";
 import { DiagnosisEntity } from "../entity/DiagnosisEntity";
 import { SenderType } from "../utils/enums";
 import { BadRequestError } from "../utils/AppError";
@@ -15,13 +15,13 @@ export class TherapySessionService {
         private dialogueNodeRepository: BaseRepository<DialogueNodeEntity>,
         private messageRepository: BaseRepository<MessageEntity>,
         private therapistChoiceRepository: BaseRepository<TherapistChoiceEntity>,
-        private scenarioRepository: ScenarioRepository
+        // Changed type to BaseRepository
+        private scenarioRepository: BaseRepository<ScenarioEntity> 
     ) {}
 
     async startSession(therapistID: number, scenarioID: number): Promise<TherapySessionEntity> {
         const scenario = await this.scenarioRepository.findByID(scenarioID);
         
-        // Load root node
         const rootNode = await this.dialogueNodeRepository.findByID(scenario.rootDialogueNode.id);
 
         const session = this.therapySessionRepository.create({
@@ -34,7 +34,6 @@ export class TherapySessionService {
 
         const savedSession = await this.therapySessionRepository.save(session);
 
-        // Create initial bot message
         const botMessage = this.messageRepository.create({
             therapySession: savedSession,
             sender: SenderType.BOT,
@@ -51,14 +50,11 @@ export class TherapySessionService {
         const currentNodeID = session.currentDialogueNodeID;
 
         if (!currentNodeID) throw new BadRequestError("Session has no current dialogue node");
-
-        const selectedChoice = await this.therapistChoiceRepository.create({} as any); 
         
         const choice = await this.therapistChoiceRepository.findByID(choiceID); 
         
         const nextNode = await this.dialogueNodeRepository.findByID(choice.nextNode.id);
 
-        // Save therapist message
         const therapistMsg = this.messageRepository.create({
             therapySession: session,
             sender: SenderType.THERAPIST,
@@ -67,10 +63,8 @@ export class TherapySessionService {
         });
         await this.messageRepository.save(therapistMsg);
 
-        // Update session
         session.currentDialogueNodeID = nextNode.id;
         
-        // Save bot response
         const botMsg = this.messageRepository.create({
             therapySession: session,
             sender: SenderType.BOT,
@@ -85,13 +79,11 @@ export class TherapySessionService {
     async submitDiagnosis(sessionID: number, diagnosis: DiagnosisEntity): Promise<TherapySessionEntity> {
         const session = await this.therapySessionRepository.findByID(sessionID);
         
-        // Direct property access
         session.finalDiagnosis = diagnosis;
         session.endTime = new Date().toISOString();
 
         const scenario = await this.scenarioRepository.findByID(session.scenarioID);
         
-        // Compare ids
         const correctConditionId = scenario.correctDiagnosis?.condition?.id;
         const submittedConditionId = diagnosis.condition?.id;
 
@@ -116,7 +108,6 @@ export class TherapySessionService {
         const session = await this.therapySessionRepository.findByID(sessionID);
         const allMessages = await this.messageRepository.findAll();
         
-        // Filter manually (can probably improve later if too slow)
         session.messages = allMessages.filter(
             (m) => m.therapySession.id === sessionID
         );
