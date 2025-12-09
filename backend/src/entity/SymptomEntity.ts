@@ -12,16 +12,16 @@ export class SymptomEntity {
     name!: string;
 
     @Column()
-    severity!: number; // 1-10
+    severity!: number; // 0-10
 
     @Column()
-    frequency!: number; // 1-5
+    frequency!: number; // 0-5
 
     @Column()
-    duration!: number; // 1-5
+    duration!: number; // 0-5
 
     @Column()
-    lifeImpact!: number; // 1-10
+    lifeImpact!: number; // 0-10
 
     @ManyToMany(() => TriggerEntity, { cascade: true })
     @JoinTable({ name: "symptom_triggers" })

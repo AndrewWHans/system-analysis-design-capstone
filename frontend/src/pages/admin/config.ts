@@ -16,22 +16,10 @@ export interface EntityConfig {
 
 const nameField: AdminField = { name: 'name', label: 'Name', type: 'text', required: true };
 
-export const ENTITY_CONFIGS: Record<string, EntityConfig> = {
-    CopingMechanism: {
-        endpoint: 'coping-mechanisms',
-        label: 'Coping Mechanisms',
-        fields: [nameField]
-    },
-    Trigger: {
-        endpoint: 'triggers',
-        label: 'Triggers',
-        fields: [nameField]
-    },
-    Mood: {
-        endpoint: 'moods',
-        label: 'Moods',
-        fields: [nameField]
-    },
+export const AdminConfig: Record<string, EntityConfig> = {
+    CopingMechanism: { endpoint: 'coping-mechanisms', label: 'Coping Mechanisms', fields: [nameField] },
+    Trigger: { endpoint: 'triggers', label: 'Triggers', fields: [nameField] },
+    Mood: { endpoint: 'moods', label: 'Moods', fields: [nameField] },
     Symptom: {
         endpoint: 'symptoms',
         label: 'Symptoms',
@@ -66,7 +54,7 @@ export const ENTITY_CONFIGS: Record<string, EntityConfig> = {
         endpoint: 'dialogue-nodes',
         label: 'Dialogue Nodes',
         fields: [
-            { name: 'botText', label: 'Bot Message (What the patient says)', type: 'text', required: true },
+            { name: 'botText', label: 'Bot Message', type: 'text', required: true },
             { name: 'therapistChoices', label: 'Therapist Choices', type: 'choice-list', endpoint: 'dialogue-nodes' }
         ]
     }
