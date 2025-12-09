@@ -6,6 +6,7 @@ import { DialogueNodeEntity } from "../entity/DialogueNodeEntity";
 import { TherapistChoiceEntity } from "../entity/TherapistChoiceEntity";
 import { ScenarioEntity } from "../entity/ScenarioEntity";
 import { DiagnosisEntity } from "../entity/DiagnosisEntity";
+import { SimulationService } from "./SimulationService";
 import { SenderType } from "../utils/enums";
 import { BadRequestError } from "../utils/AppError";
 
@@ -15,13 +16,12 @@ export class TherapySessionService {
         private dialogueNodeRepository: BaseRepository<DialogueNodeEntity>,
         private messageRepository: BaseRepository<MessageEntity>,
         private therapistChoiceRepository: BaseRepository<TherapistChoiceEntity>,
-        // Changed type to BaseRepository
-        private scenarioRepository: BaseRepository<ScenarioEntity> 
+        private scenarioRepository: BaseRepository<ScenarioEntity>,
+        private simulationService: SimulationService
     ) {}
 
     async startSession(therapistID: number, scenarioID: number): Promise<TherapySessionEntity> {
         const scenario = await this.scenarioRepository.findByID(scenarioID);
-        
         const rootNode = await this.dialogueNodeRepository.findByID(scenario.rootDialogueNode.id);
 
         const session = this.therapySessionRepository.create({
@@ -33,73 +33,51 @@ export class TherapySessionService {
         });
 
         const savedSession = await this.therapySessionRepository.save(session);
-
-        const botMessage = this.messageRepository.create({
-            therapySession: savedSession,
-            sender: SenderType.BOT,
-            content: rootNode.botText,
-            timestamp: new Date().toISOString()
-        });
-        await this.messageRepository.save(botMessage);
+        await this.logMessage(savedSession, SenderType.BOT, rootNode.botText);
 
         return savedSession;
     }
 
     async processTherapistChoice(sessionID: number, choiceID: number): Promise<TherapySessionEntity> {
         const session = await this.therapySessionRepository.findByID(sessionID);
-        const currentNodeID = session.currentDialogueNodeID;
-
-        if (!currentNodeID) throw new BadRequestError("Session has no current dialogue node");
+        if (!session.currentDialogueNodeID) throw new BadRequestError("Session has no current dialogue node");
         
-        const choice = await this.therapistChoiceRepository.findByID(choiceID); 
-        
-        const nextNode = await this.dialogueNodeRepository.findByID(choice.nextNode.id);
-
-        const therapistMsg = this.messageRepository.create({
-            therapySession: session,
-            sender: SenderType.THERAPIST,
-            content: choice.text,
-            timestamp: new Date().toISOString()
+        // Get Data
+        const choice = await this.therapistChoiceRepository.findByID(choiceID);
+        // Ensure we have the full next node
+        const fullChoice = await this.therapistChoiceRepository.repo.findOne({
+            where: { id: choiceID },
+            relations: ["nextNode"]
         });
-        await this.messageRepository.save(therapistMsg);
-
-        session.currentDialogueNodeID = nextNode.id;
         
-        const botMsg = this.messageRepository.create({
-            therapySession: session,
-            sender: SenderType.BOT,
-            content: nextNode.botText,
-            timestamp: new Date().toISOString()
-        });
-        await this.messageRepository.save(botMsg);
+        if (!fullChoice || !fullChoice.nextNode) throw new BadRequestError("Invalid choice or missing next node");
+
+        // Log Therapist Action
+        await this.logMessage(session, SenderType.THERAPIST, choice.text);
+
+        // Delegate Logic to SimulationService (SRP)
+        const result = this.simulationService.getNextState(fullChoice);
+
+        // Update Session State
+        session.currentDialogueNodeID = result.nextNode.id;
+        await this.logMessage(session, SenderType.BOT, result.botResponse);
 
         return await this.therapySessionRepository.save(session);
     }
 
     async submitDiagnosis(sessionID: number, diagnosis: DiagnosisEntity): Promise<TherapySessionEntity> {
         const session = await this.therapySessionRepository.findByID(sessionID);
-        
+        const scenario = await this.scenarioRepository.findByID(session.scenarioID);
+
+        // Delegate Logic to SimulationService (SRP)
+        const result = this.simulationService.evaluateDiagnosis(scenario, diagnosis);
+
+        // Update Session State
         session.finalDiagnosis = diagnosis;
         session.endTime = new Date().toISOString();
 
-        const scenario = await this.scenarioRepository.findByID(session.scenarioID);
-        
-        const correctConditionId = scenario.correctDiagnosis?.condition?.id;
-        const submittedConditionId = diagnosis.condition?.id;
-
-        const isCorrect = correctConditionId === submittedConditionId;
-
-        const resultText = isCorrect 
-            ? "Diagnosis matches the scenario's correct diagnosis."
-            : "Diagnosis does not match.";
-
-        const resultMsg = this.messageRepository.create({
-            therapySession: session,
-            sender: SenderType.BOT,
-            content: resultText,
-            timestamp: new Date().toISOString()
-        });
-        await this.messageRepository.save(resultMsg);
+        // Log Result
+        await this.logMessage(session, SenderType.BOT, result.feedback);
 
         return await this.therapySessionRepository.save(session);
     }
@@ -112,5 +90,16 @@ export class TherapySessionService {
             (m) => m.therapySession.id === sessionID
         );
         return session;
+    }
+
+    // Helper
+    private async logMessage(session: TherapySessionEntity, sender: SenderType, content: string) {
+        const msg = this.messageRepository.create({
+            therapySession: session,
+            sender,
+            content,
+            timestamp: new Date().toISOString()
+        });
+        await this.messageRepository.save(msg);
     }
 }

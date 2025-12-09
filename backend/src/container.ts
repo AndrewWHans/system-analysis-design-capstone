@@ -15,7 +15,7 @@ import { SymptomEntity } from "./entity/SymptomEntity";
 import { ConditionEntity } from "./entity/ConditionEntity";
 import { DiagnosisEntity } from "./entity/DiagnosisEntity";
 
-// Custom Repositories (Keep these as they have custom logic)
+// Custom Repositories
 import { TherapistRepository } from "./repository/TherapistRepository";
 import { TherapySessionRepository } from "./repository/TherapySessionRepository";
 import { TherapistChoiceRepository } from "./repository/TherapistChoiceRepository";
@@ -28,9 +28,9 @@ import { ScenarioService } from "./service/ScenarioService";
 import { SymptomService } from "./service/SymptomService"
 import { BaseService } from "./service/BaseService";
 import { DialogueNodeService } from "./service/DialogueNodeService";
+import { SimulationService } from "./service/SimulationService";
 
 // Initialize Repositories
-// Custom Repositories (Complex logic)
 const therapistRepo = new TherapistRepository();
 const sessionRepo = new TherapySessionRepository();
 const choiceRepo = new TherapistChoiceRepository();
@@ -46,10 +46,12 @@ const moodRepo = new BaseRepository(MoodEntity, "Mood");
 const symptomRepo = new BaseRepository(SymptomEntity, "Symptom", ["triggers", "moods", "copingMechanisms"]);
 const conditionRepo = new BaseRepository(ConditionEntity, "Condition", ["symptoms"]);
 
-// Initialize services
+// Initialize Services
+const simulationService = new SimulationService();
+
 export const services = {
     therapist: new TherapistService(therapistRepo),
-    session: new TherapySessionService(sessionRepo, nodeRepo, messageRepo, choiceRepo, scenarioRepo),
+    session: new TherapySessionService(sessionRepo, nodeRepo, messageRepo, choiceRepo, scenarioRepo, simulationService),
     scenario: new ScenarioService(scenarioRepo, nodeRepo),
     symptom: new SymptomService(symptomRepo),
     coping: new BaseService(copingRepo, "Coping Mechanism"),

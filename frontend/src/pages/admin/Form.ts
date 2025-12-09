@@ -1,6 +1,7 @@
 import type { EntityConfig } from "./config";
 import { AdminApi } from "./api";
 import { FieldRenderers } from "./renderers";
+import TomSelect from "tom-select";
 
 export class AdminForm {
     private container: HTMLElement;
@@ -33,8 +34,8 @@ export class AdminForm {
                 <h3 class="text-xl font-bold dark:text-white">${id ? 'Edit' : 'Create'} ${this.config.label}</h3>
                 <button id="cancel-btn" class="text-sm text-gray-500 hover:underline">Cancel</button>
             </div>
-            <form id="admin-form">${fieldsHtml.join('')}
-                <button type="submit" class="mt-6 bg-[#5B3E86] text-white px-6 py-3 rounded-lg w-full font-medium">Save</button>
+            <form id="admin-form" autocomplete="off">${fieldsHtml.join('')}
+                <button type="submit" class="mt-6 bg-[#5B3E86] text-white px-6 py-3 rounded-lg w-full font-medium hover:bg-[#4a326c] transition">Save</button>
             </form>`;
 
         this.hydrate();
@@ -47,27 +48,62 @@ export class AdminForm {
             this.handleSubmit(e.target as HTMLFormElement);
         });
 
-        // Initialize Dynamic Choice Lists
+        // 1. Initialize Tom Select for marked fields
+        this.container.querySelectorAll('.tom-select-target').forEach((el) => {
+            new TomSelect(el as HTMLSelectElement, {
+                plugins: ['remove_button', 'clear_button'],
+                persist: false,
+                create: false,
+                maxItems: (el as HTMLSelectElement).multiple ? null : 1
+            });
+        });
+
+        // 2. Initialize Dynamic Choice Lists (Complexity: High)
         this.container.querySelectorAll('.choice-wrapper').forEach(async (wrapper) => {
             const endpoint = wrapper.getAttribute('data-endpoint')!;
             const container = wrapper.querySelector('.choice-container')!;
             const nodes = await AdminApi.getAll(endpoint);
-            const opts = nodes.map(n => `<option value="${n.id}">${n.id} - ${(n as any).botText?.substring(0,20)}...</option>`).join('');
+            
+            // Prepare options HTML string once
+            const optsHtml = nodes.map(n => `<option value="${n.id}">${n.id} - ${(n as any).botText?.substring(0,30)}...</option>`).join('');
 
             const addRow = (txt = '', next = '') => {
                 const row = document.createElement('div');
-                row.className = "flex gap-2 choice-row";
-                row.innerHTML = `<input class="flex-1 px-2 py-1 border rounded dark:bg-gray-800 dark:text-white" value="${txt}" placeholder="Text"><select class="w-1/3 px-2 py-1 border rounded dark:bg-gray-800 dark:text-white"><option value="">Link...</option>${opts}</select><button type="button" class="text-red-500 font-bold px-2 remove">&times;</button>`;
+                row.className = "flex gap-2 choice-row items-start";
+                
+                // We use a textarea for text to allow more content visibility
+                // We use a select with class 'tom-select-nested' to init TomSelect on it later
+                row.innerHTML = `
+                    <input class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-blue-500" value="${txt}" placeholder="Choice Text" required>
+                    <div class="w-1/3">
+                        <select class="tom-select-nested" placeholder="Link to node..."><option value="">Link...</option>${optsHtml}</select>
+                    </div>
+                    <button type="button" class="text-red-500 hover:text-red-700 font-bold px-2 py-2 remove transition">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                `;
+                
                 if(next) (row.querySelector('select') as HTMLSelectElement).value = next;
+                
                 row.querySelector('.remove')!.addEventListener('click', () => row.remove());
                 container.appendChild(row);
+
+                // Initialize TomSelect on this specific new row's select
+                new TomSelect(row.querySelector('.tom-select-nested') as HTMLSelectElement, {
+                    maxItems: 1,
+                    create: false,
+                    plugins: ['clear_button']
+                });
             };
 
             wrapper.querySelector('.btn-add-choice')!.addEventListener('click', () => addRow());
             
             const existing = wrapper.getAttribute('data-existing');
             if (existing) {
-                try { JSON.parse(atob(existing)).forEach((c: any) => addRow(c.text, c.nextNode?.id)); } catch {}
+                try { 
+                    const parsed = JSON.parse(atob(existing));
+                    if(Array.isArray(parsed)) parsed.forEach((c: any) => addRow(c.text, c.nextNode?.id)); 
+                } catch {}
             }
         });
     }

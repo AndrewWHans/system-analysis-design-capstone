@@ -40,7 +40,7 @@ export class DialogueNodeService extends BaseService<DialogueNodeEntity> {
     }
 
     async update(id: number, data: any): Promise<void> {
-        const node = await this.repository.findByID(id);
+        const node = await this.getByID(id);
 
         if (data.botText) {
             node.botText = data.botText;
@@ -48,26 +48,57 @@ export class DialogueNodeService extends BaseService<DialogueNodeEntity> {
         }
 
         if (data.therapistChoices && Array.isArray(data.therapistChoices)) {
-            await this.choiceRepo.deleteBySourceNodeID(id);
             await this.handleChoicesUpdate(node, data.therapistChoices);
         }
     }
 
-    private async handleChoicesUpdate(sourceNode: DialogueNodeEntity, choicesData: any[]) {
-        for (const cData of choicesData) {
+    /**
+     * Instead of deleting all choices and re-creating them (which kills IDs),
+     * we compare existing vs incoming to Update, Create, or Delete specifically.
+     */
+    private async handleChoicesUpdate(sourceNode: DialogueNodeEntity, incomingChoices: any[]) {
+        const existingChoices = await this.choiceRepo.repo.find({
+            where: { sourceNode: { id: sourceNode.id } },
+            relations: ["nextNode"]
+        });
+
+        // 1. Identify IDs present in the payload
+        const incomingIds = new Set(incomingChoices.map(c => c.id).filter(id => id));
+
+        // 2. Delete choices that exist in DB but are NOT in the payload
+        const toDelete = existingChoices.filter(c => !incomingIds.has(c.id));
+        if (toDelete.length > 0) {
+            await this.choiceRepo.repo.remove(toDelete);
+        }
+
+        // 3. Process Upserts (Update existing or Create new)
+        for (const cData of incomingChoices) {
+            // Resolve Next Node ID
             let nextNodeId = cData.nextNode;
             if (typeof cData.nextNode === 'object' && cData.nextNode !== null) {
                 nextNodeId = cData.nextNode.id;
             }
 
-            if (nextNodeId) {
-                const nextNode = await this.repository.findByID(Number(nextNodeId));
-                const choice = this.choiceRepo.create({
+            if (!nextNodeId) continue; // Skip invalid choices
+
+            const nextNodeEntity = await this.repository.findByID(Number(nextNodeId));
+
+            if (cData.id) {
+                // UPDATE existing choice
+                const existing = existingChoices.find(e => e.id === cData.id);
+                if (existing) {
+                    existing.text = cData.text;
+                    existing.nextNode = nextNodeEntity;
+                    await this.choiceRepo.save(existing);
+                }
+            } else {
+                // CREATE new choice
+                const newChoice = this.choiceRepo.create({
                     text: cData.text,
                     sourceNode: sourceNode,
-                    nextNode: nextNode
+                    nextNode: nextNodeEntity
                 });
-                await this.choiceRepo.save(choice);
+                await this.choiceRepo.save(newChoice);
             }
         }
     }

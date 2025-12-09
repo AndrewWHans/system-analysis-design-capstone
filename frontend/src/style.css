@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "tom-select/dist/css/tom-select.default.css";
 
 @variant dark (&:where(.dark, .dark *));
 
@@ -18,4 +19,69 @@
 }
 .dark ::-webkit-scrollbar-thumb {
   background: #4b5563; 
+}
+
+/* --- Tom Select Customization for Tailwind & Dark Mode --- */
+
+/* Base Input Area */
+.ts-control {
+  @apply rounded-lg border px-4 py-2 transition shadow-none;
+  border-color: #d1d5db; /* gray-300 */
+  background-color: #ffffff;
+}
+.dark .ts-control {
+  background-color: #1f2937; /* gray-800 */
+  border-color: #374151; /* gray-700 */
+  color: white;
+}
+.ts-control.focus {
+  @apply ring-2 ring-blue-500 border-blue-500 shadow-none;
+}
+
+/* Input text typing area */
+.ts-control input {
+  @apply dark:text-white;
+}
+
+/* Dropdown Menu Container */
+.ts-dropdown {
+  @apply border-gray-300 shadow-lg mt-1 rounded-lg overflow-hidden;
+  z-index: 50;
+}
+.dark .ts-dropdown {
+  background-color: #1f2937; /* gray-800 */
+  border: 1px solid #374151; /* gray-700 */
+  color: white;
+}
+
+/* Dropdown Options */
+.ts-dropdown .option {
+  @apply px-4 py-2 cursor-pointer;
+}
+.dark .ts-dropdown .option {
+  color: #d1d5db;
+}
+
+/* Active/Hover Option */
+.ts-dropdown .active {
+  background-color: #f3f4f6; /* gray-100 */
+  color: black;
+}
+.dark .ts-dropdown .active {
+  background-color: #374151; /* gray-700 */
+  color: white;
+}
+
+/* Selected Badges (Multi-select items) */
+.ts-wrapper.multi .ts-control > div.item {
+  background-color: #e5e7eb; /* gray-200 */
+  border: 1px solid #d1d5db;
+  color: black;
+  border-radius: 4px;
+}
+.dark .ts-wrapper.multi .ts-control > div.item {
+  background-color: #374151; /* gray-700 */
+  border: 1px solid #4b5563;
+  color: white;
+  text-shadow: none;
 }
