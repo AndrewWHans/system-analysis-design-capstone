@@ -9,14 +9,14 @@
     "preview": "vite preview"
   },
   "devDependencies": {
+    "@types/drawflow": "^0.0.12",
     "typescript": "~5.9.3",
-    "vite": "^7.2.4",
-    "@types/drawflow": "^0.0.12"
+    "vite": "^7.2.4"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.17",
+    "drawflow": "^0.0.60",
     "tailwindcss": "^4.1.17",
-    "tom-select": "^2.4.3",
-    "drawflow": "^0.0.60"
+    "tom-select": "^2.4.3"
   }
 }

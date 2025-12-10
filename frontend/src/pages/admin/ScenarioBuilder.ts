@@ -318,11 +318,12 @@ export class ScenarioBuilder {
 
             // End nodes have no choices
             if (!isEndNode) {
-                const choiceInputs = nodeEl.querySelectorAll('.choices-list input');
-                choiceInputs.forEach((input: HTMLInputElement) => {
+                const choiceInputs = nodeEl.querySelectorAll<HTMLInputElement>('.choices-list input');
+
+                choiceInputs.forEach((input) => {
                     const text = input.value;
                     const outputKey = input.getAttribute('data-output'); 
-                    
+
                     if (outputKey && node.outputs[outputKey]) {
                         const connections = node.outputs[outputKey].connections;
                         if (connections.length > 0) {
