@@ -10,11 +10,13 @@
   },
   "devDependencies": {
     "typescript": "~5.9.3",
-    "vite": "^7.2.4"
+    "vite": "^7.2.4",
+    "@types/drawflow": "^0.0.12"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.17",
     "tailwindcss": "^4.1.17",
-    "tom-select": "^2.4.3"
+    "tom-select": "^2.4.3",
+    "drawflow": "^0.0.60"
   }
 }

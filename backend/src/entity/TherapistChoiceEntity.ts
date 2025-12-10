@@ -9,11 +9,14 @@ export class TherapistChoiceEntity {
     @Column("text")
     text!: string;
 
-    @ManyToOne(() => DialogueNodeEntity, (node) => node.therapistChoices)
+    @Column({ type: "int", default: 0 })
+    orderIndex!: number;
+
+    @ManyToOne(() => DialogueNodeEntity, (node) => node.therapistChoices, { onDelete: "CASCADE" })
     @JoinColumn({ name: "source_node_id" })
     sourceNode!: DialogueNodeEntity;
 
-    @ManyToOne(() => DialogueNodeEntity)
+    @ManyToOne(() => DialogueNodeEntity, { onDelete: "SET NULL" })
     @JoinColumn({ name: "next_node_id" })
     nextNode!: DialogueNodeEntity;
 }

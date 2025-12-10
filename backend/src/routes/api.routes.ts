@@ -9,11 +9,11 @@ import { BaseController } from "../controller/BaseController";
 
 const router = Router();
 
-// Initialize Controllers
+// Initialize controllers
 const authController = new AuthController(services.therapist);
 const sessionController = new SessionController(services.session);
 
-// Generic Controllers for Read-Only access
+// Generic controllers for read-only access
 const copingCtrl = new BaseController(services.coping);
 const triggerCtrl = new BaseController(services.trigger);
 const moodCtrl = new BaseController(services.mood);
@@ -31,7 +31,7 @@ router.post("/login", catchAsync(authController.login));
 // Session
 router.post("/sessions", catchAsync(sessionController.startSession));
 
-// Public Read-Only Resources
+// Public read-only resources
 router.get("/coping-mechanisms", catchAsync(copingCtrl.getAll));
 router.get("/coping-mechanisms/:id", catchAsync(copingCtrl.getById));
 
@@ -52,6 +52,15 @@ router.get("/diagnoses/:id", catchAsync(diagnosisCtrl.getById));
 
 router.get("/dialogue-nodes", catchAsync(nodeCtrl.getAll));
 router.get("/dialogue-nodes/:id", catchAsync(nodeCtrl.getById));
+
+router.get("/scenarios", catchAsync(async (req, res) => {
+    const items = await services.scenario.getAllScenarios();
+    res.json(items);
+}));
+router.get("/scenarios/:id", catchAsync(async (req, res) => {
+    const item = await services.scenario.getScenarioByID(Number(req.params.id));
+    res.json(item);
+}));
 
 // Admin namespace
 router.use("/admin", authenticateToken, requireAdmin, adminRouter);

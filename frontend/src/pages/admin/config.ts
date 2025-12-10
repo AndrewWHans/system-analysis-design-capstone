@@ -49,12 +49,9 @@ export const AdminConfig: Record<string, EntityConfig> = {
             { name: 'condition', label: 'Condition', type: 'select', endpoint: 'conditions', required: true }
         ]
     },
-    DialogueNode: {
-        endpoint: 'dialogue-nodes',
-        label: 'Dialogue Nodes',
-        fields: [
-            { name: 'botText', label: 'Bot Message', type: 'text', required: true },
-            { name: 'therapistChoices', label: 'Therapist Choices', type: 'choice-list', endpoint: 'dialogue-nodes' }
-        ]
+    Scenario: {
+        endpoint: 'scenarios',
+        label: 'Scenarios',
+        fields: []
     }
 };

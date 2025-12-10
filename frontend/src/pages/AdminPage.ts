@@ -3,6 +3,7 @@ import { AdminConfig } from "./admin/config";
 import { AdminApi } from "./admin/api";
 import { AdminTable } from "./admin/Table";
 import { AdminForm } from "./admin/Form";
+import { ScenarioBuilder } from "./admin/ScenarioBuilder";
 
 export const renderAdminPage = () => adminHtml;
 
@@ -28,11 +29,14 @@ export const setupAdminPage = (navigate: (path: string) => void) => {
         // Fetch data
         let data = await AdminApi.getAll(AdminConfig[currentType].endpoint);
 
-        // Sort the IDS sequentially (Ascending)
-        data.sort((a, b) => a.id - b.id);
+        // Sort the IDS sequentially (ascending)
+        if (data && Array.isArray(data)) {
+            data.sort((a, b) => a.id - b.id);
+        } else {
+            data = [];
+        }
 
-        // Setup search interface
-        // We split the contentDiv: top part for search, bottom part for table
+        // --- Restored search input HTML ---
         contentDiv.innerHTML = `
             <div class="mb-6 relative">
                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -55,7 +59,7 @@ export const setupAdminPage = (navigate: (path: string) => void) => {
 
         // Define render logic for table
         const renderTable = (items: any[]) => {
-            new AdminTable(tableWrapper, loadForm, async (id) => {
+            new AdminTable(tableWrapper, loadEntityEditor, async (id) => {
                 if (confirm('Delete?')) { 
                     await AdminApi.delete(AdminConfig[currentType].endpoint, id); 
                     loadList(); 
@@ -87,7 +91,15 @@ export const setupAdminPage = (navigate: (path: string) => void) => {
         renderTable(data);
     };
 
-    const loadForm = (id: number | null) => {
+    const loadEntityEditor = (id: number | null) => {
+        if (currentType === 'Scenario') {
+            loadScenarioBuilder(id);
+        } else {
+            loadStandardForm(id);
+        }
+    };
+
+    const loadStandardForm = (id: number | null) => {
         createBtn.style.display = 'none';
         contentDiv.innerHTML = `<div class="text-center py-10 text-gray-500">Loading Form...</div>`;
         new AdminForm(contentDiv, AdminConfig[currentType], async (data) => {
@@ -96,12 +108,39 @@ export const setupAdminPage = (navigate: (path: string) => void) => {
         }, loadList).render(id);
     };
 
+    const loadScenarioBuilder = (id: number | null) => {
+        createBtn.style.display = 'none';
+        contentDiv.innerHTML = ''; 
+        contentDiv.className = "";
+
+        const parentWrapper = contentDiv.parentElement;
+        if (parentWrapper) {
+            parentWrapper.classList.remove('max-w-5xl');
+            parentWrapper.classList.add('max-w-[98%]');
+        }
+
+        new ScenarioBuilder(contentDiv, () => {
+            // On Back/Save Exit
+            
+            // Restore Container Styles
+            contentDiv.className = "bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6 min-h-[400px]"; 
+            
+            // Restore Width Logic
+            if (parentWrapper) {
+                parentWrapper.classList.remove('max-w-[98%]');
+                parentWrapper.classList.add('max-w-5xl');
+            }
+
+            loadList();
+        }).render(id);
+    };
+
     document.querySelectorAll('.nav-item').forEach(b => b.addEventListener('click', (e) => {
         currentType = (e.currentTarget as HTMLElement).dataset.target!;
         loadList();
     }));
 
-    createBtn.addEventListener('click', () => loadForm(null));
+    createBtn.addEventListener('click', () => loadEntityEditor(null));
     document.getElementById('btn-back-home')?.addEventListener('click', () => navigate('/'));
     
     loadList();

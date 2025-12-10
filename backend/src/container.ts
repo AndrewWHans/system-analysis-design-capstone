@@ -54,7 +54,7 @@ const seederService = new SeederService(triggerRepo, moodRepo, copingRepo, sympt
 export const services = {
     therapist: new TherapistService(therapistRepo),
     session: new TherapySessionService(sessionRepo, nodeRepo, messageRepo, choiceRepo, scenarioRepo, simulationService),
-    scenario: new ScenarioService(scenarioRepo, nodeRepo),
+    scenario: new ScenarioService(scenarioRepo, nodeRepo, choiceRepo),
     symptom: new SymptomService(symptomRepo),
     coping: new BaseService(copingRepo, "Coping Mechanism"),
     trigger: new BaseService(triggerRepo, "Trigger"),

@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tom-select/dist/css/tom-select.default.css";
+@import "drawflow/dist/drawflow.min.css";
 
 @variant dark (&:where(.dark, .dark *));
 
@@ -109,4 +110,108 @@
   background-color: #1f2937 !important; /* gray-800 */
   border-color: #374151 !important;     /* gray-700 */
   color: #f9fafb !important;            /* gray-50 */
+}
+
+/* --- Drawflow Customization --- */
+
+#drawflow {
+  outline: none;
+  overflow: hidden;
+}
+
+/* Force correct positioning context */
+.drawflow .drawflow-node {
+  display: block;
+  position: absolute;
+  background: transparent;
+  width: auto;
+  border: none;
+  padding: 0;
+  box-shadow: none;
+  z-index: 2;
+}
+
+
+.drawflow .drawflow-node.selected .node-content {
+  @apply ring-2 ring-[#5B3E86];
+}
+
+/* --- Ports (Inputs/Outputs) --- */
+
+/* Input Port (Left side) - Fixed position for the node entry */
+.drawflow .drawflow-node .inputs {
+    position: absolute !important;
+    left: -10px !important;
+    top: 42px !important;
+    display: block !important;
+    z-index: 10;
+}
+
+.drawflow .drawflow-node .input {
+  width: 20px;
+  height: 20px;
+  background: #3b82f6; /* blue-500 */
+  border: 2px solid white;
+  border-radius: 50%;
+  cursor: crosshair;
+}
+
+/* Output Ports (Right side) - Dynamic list alignment */
+.drawflow .drawflow-node .outputs {
+    position: absolute !important;
+    right: -10px !important;
+    top: 179px !important; 
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    z-index: 10;
+}
+
+.drawflow .drawflow-node .output {
+    position: relative;
+    height: 34px !important; 
+    width: 20px !important;
+    background: transparent;
+    border: none;
+    margin: 0 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: crosshair;
+}
+
+/* The actual visual dot inside the output wrapper */
+.drawflow .drawflow-node .output::after {
+    content: '';
+    width: 14px;
+    height: 14px;
+    background: #9ca3af;
+    border: 2px solid white;
+    border-radius: 50%;
+    display: block;
+    transition: transform 0.2s, background-color 0.2s;
+}
+
+.drawflow .drawflow-node .output:hover::after {
+    background: #5B3E86;
+    transform: scale(1.3);
+}
+
+/* Wires */
+.drawflow .connection .main-path {
+  stroke-width: 3px;
+  stroke: #9ca3af;
+}
+
+.drawflow .connection .main-path.selected {
+  stroke: #5B3E86;
+}
+
+/* Dark Mode Overrides */
+.dark .drawflow {
+    background-image: radial-gradient(#374151 1px, transparent 1px) !important;
+}
+.dark .drawflow .drawflow-node .output::after,
+.dark .drawflow .drawflow-node .input {
+    border-color: #1f2937;
 }
