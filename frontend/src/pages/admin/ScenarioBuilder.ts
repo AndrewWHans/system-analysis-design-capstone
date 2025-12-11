@@ -9,6 +9,10 @@ export class ScenarioBuilder {
     private editor: any;
     private scenarioId: number | null = null;
     private onBack: () => void;
+    
+    // Grid Snap State
+    private isSnapEnabled: boolean = true;
+    private readonly GRID_SIZE = 20; // Matches background-size in CSS
 
     constructor(container: HTMLElement, onBack: () => void) {
         this.container = container;
@@ -24,6 +28,7 @@ export class ScenarioBuilder {
             scenarioData = await AdminApi.getOne('scenarios', id);
         }
 
+        // Added Snap Toggle Switch in the Sidebar Header
         this.container.innerHTML = `
             <div class="flex h-[calc(100vh-140px)] border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden shadow-sm bg-white dark:bg-gray-900">
                 
@@ -39,6 +44,7 @@ export class ScenarioBuilder {
                             </h3>
                             <button id="sb-cancel" class="text-xs font-bold text-gray-400 hover:text-red-500 cursor-pointer transition uppercase tracking-wider">Close</button>
                         </div>
+
                         <div class="space-y-4">
                             <div>
                                 <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Name</label>
@@ -93,8 +99,17 @@ export class ScenarioBuilder {
                                 <li><span class="font-bold">Green Node</span> is the Root (Start).</li>
                                 <li>Connect <span class="font-bold">Grey Dot</span> (Output) to <span class="font-bold">Blue Dot</span> (Input).</li>
                                 <li>Drag canvas to pan, ctrl + scroll to zoom.</li>
-                                <li>One choice connects to <span class="font-bold">one</span> node.</li>
+                                <li>Toggle <span class="font-bold">Grid Snapping</span> for alignment.</li>
                             </ul>
+                        </div>
+                    </div>
+
+                    <div class="px-5 pt-3 pb-4 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">Grid Snapping</span>
+                            <button id="sb-snap-toggle" class="w-10 h-5 rounded-full relative transition-colors duration-200 ${this.isSnapEnabled ? 'bg-[#5B3E86]' : 'bg-gray-300'}">
+                                <span id="sb-snap-knob" class="absolute left-1 top-1 w-3 h-3 bg-white rounded-full transition-transform duration-200 ${this.isSnapEnabled ? 'translate-x-5' : 'translate-x-0'}"></span>
+                            </button>
                         </div>
                     </div>
 
@@ -140,6 +155,26 @@ export class ScenarioBuilder {
                      this.editor.removeSingleConnection(output_id, conn.node, output_class, conn.output);
                 });
             }
+        });
+
+        // Node snapping after moved
+        this.editor.on('nodeMoved', (id: any) => {
+            if (!this.isSnapEnabled) return;
+            const node = this.editor.getNodeFromId(id);
+            const x = node.pos_x;
+            const y = node.pos_y;
+            const snapX = Math.round(x / this.GRID_SIZE) * this.GRID_SIZE;
+            const snapY = Math.round(y / this.GRID_SIZE) * this.GRID_SIZE;
+            
+            // Just one final force set to be sure
+            this.editor.drawflow.drawflow.Home.data[id].pos_x = snapX;
+            this.editor.drawflow.drawflow.Home.data[id].pos_y = snapY;
+            const el = document.getElementById(`node-${id}`);
+            if (el) {
+                el.style.top = `${snapY}px`;
+                el.style.left = `${snapX}px`;
+            }
+            this.editor.updateConnectionNodes(`node-${id}`);
         });
 
         // --- GRAPH REBUILDING LOGIC ---
@@ -320,6 +355,7 @@ export class ScenarioBuilder {
     }
 
     private setupEvents() {
+        // Drag and Drop from sidebar
         const dragItems = document.querySelectorAll('.drag-item');
         let draggedType: NodeType = 'dialogue';
 
@@ -334,14 +370,40 @@ export class ScenarioBuilder {
         container.addEventListener('drop', (e) => {
             e.preventDefault();
             const rect = container.getBoundingClientRect();
-            const x = (e.clientX - rect.left - this.editor.canvas_x) / this.editor.zoom;
-            const y = (e.clientY - rect.top - this.editor.canvas_y) / this.editor.zoom;
+            let x = (e.clientX - rect.left - this.editor.canvas_x) / this.editor.zoom;
+            let y = (e.clientY - rect.top - this.editor.canvas_y) / this.editor.zoom;
             
+            // Snap on Drop
+            if (this.isSnapEnabled) {
+                x = Math.round(x / this.GRID_SIZE) * this.GRID_SIZE;
+                y = Math.round(y / this.GRID_SIZE) * this.GRID_SIZE;
+            }
+
             this.addNodeToCanvas('', x, y, draggedType);
         });
 
+        // Button Actions
         document.getElementById('sb-save')?.addEventListener('click', () => this.saveGraph());
         document.getElementById('sb-cancel')?.addEventListener('click', this.onBack);
+
+        // Toggle Snapping Logic
+        const toggleBtn = document.getElementById('sb-snap-toggle');
+        toggleBtn?.addEventListener('click', () => {
+            this.isSnapEnabled = !this.isSnapEnabled;
+            const knob = document.getElementById('sb-snap-knob');
+            
+            if (this.isSnapEnabled) {
+                toggleBtn.classList.remove('bg-gray-300');
+                toggleBtn.classList.add('bg-[#5B3E86]');
+                knob?.classList.remove('translate-x-0');
+                knob?.classList.add('translate-x-5');
+            } else {
+                toggleBtn.classList.add('bg-gray-300');
+                toggleBtn.classList.remove('bg-[#5B3E86]');
+                knob?.classList.add('translate-x-0');
+                knob?.classList.remove('translate-x-5');
+            }
+        });
     }
 
     private addNodeToCanvas(initialText: string, x: number, y: number, type: NodeType): number {
