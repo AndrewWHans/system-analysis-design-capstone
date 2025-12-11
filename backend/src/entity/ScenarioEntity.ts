@@ -13,6 +13,9 @@ export class ScenarioEntity {
     @Column("text")
     description!: string;
 
+    @Column("simple-json", { nullable: true })
+    initialState!: any;
+
     @ManyToOne(() => ConditionEntity)
     @JoinColumn({ name: "correct_condition_id" })
     correctDiagnosis!: ConditionEntity;

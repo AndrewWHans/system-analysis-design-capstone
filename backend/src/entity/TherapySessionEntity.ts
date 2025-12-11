@@ -27,6 +27,9 @@ export class TherapySessionEntity {
     @Column()
     currentDialogueNodeID!: number;
 
+    @Column("simple-json", { nullable: true })
+    context!: any;
+
     @OneToMany(() => MessageEntity, (message) => message.therapySession, {
         cascade: true,
     })

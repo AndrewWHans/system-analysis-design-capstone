@@ -2,7 +2,7 @@ import { TherapySessionRepository } from "../repository/TherapySessionRepository
 import { BaseRepository } from "../repository/BaseRepository";
 import { MessageEntity } from "../entity/MessageEntity";
 import { TherapySessionEntity } from "../entity/TherapySessionEntity";
-import { DialogueNodeEntity } from "../entity/DialogueNodeEntity";
+import { DialogueNodeEntity, NodeType } from "../entity/DialogueNodeEntity";
 import { TherapistChoiceEntity } from "../entity/TherapistChoiceEntity";
 import { ScenarioEntity } from "../entity/ScenarioEntity";
 import { ConditionEntity } from "../entity/ConditionEntity";
@@ -38,11 +38,13 @@ export class TherapySessionService {
             scenarioID,
             startTime: new Date().toISOString(),
             currentDialogueNodeID: rootNode.id,
-            messages: []
+            context: scenario.initialState || {}
         });
 
         const savedSession = await this.therapySessionRepository.save(session);
-        await this.logMessage(savedSession, SenderType.BOT, rootNode.botText);
+        
+        // Use the recursive processor to handle Root node (incase Root is state/logic)
+        await this.processCurrentNodeRecursive(savedSession, rootNode);
 
         return await this.getSessionDetails(savedSession.id);
     }
@@ -58,22 +60,108 @@ export class TherapySessionService {
         
         if (!choice || !choice.nextNode) throw new BadRequestError("Invalid choice or missing next node");
 
+        // Log therapist selection
         await this.logMessage(session, SenderType.THERAPIST, choice.text);
-        const result = this.simulationService.getNextState(choice);
 
-        session.currentDialogueNodeID = result.nextNode.id;
+        // Load the immediate next node
+        const nextNode = await this.dialogueNodeRepository.findByID(choice.nextNode.id);
+
+        // Recursive processing (handles State Updates, Logic, Random, then stops at Dialogue)
+        await this.processCurrentNodeRecursive(session, nextNode);
         
-        if (result.botResponse) {
-            await this.logMessage(session, SenderType.BOT, result.botResponse);
-        }
-
-        const nextNodeFull = await this.dialogueNodeRepository.findByID(result.nextNode.id);
-        if(nextNodeFull.isEndNode) {
-            session.endTime = new Date().toISOString(); 
-        }
-
-        await this.therapySessionRepository.save(session);
         return await this.getSessionDetails(sessionID);
+    }
+
+    /**
+     * Recursively processes nodes until it hits a DIALOGUE node (bot speaks) or END node.
+     */
+    private async processCurrentNodeRecursive(session: TherapySessionEntity, node: DialogueNodeEntity): Promise<void> {
+        // Ensure we have choices loaded for logic/random processing
+        const fullNode = await this.dialogueNodeRepository.repo.findOne({
+            where: { id: node.id },
+            relations: ["therapistChoices", "therapistChoices.nextNode"],
+            order: { therapistChoices: { orderIndex: "ASC" } }
+        });
+        
+        if (!fullNode) throw new NotFoundError("Node not found during traversal");
+
+        // Update session pointer
+        session.currentDialogueNodeID = fullNode.id;
+
+        // CASE 1: State Update (Invisible)
+        if (fullNode.type === NodeType.STATE_UPDATE) {
+            session.context = this.simulationService.applyStateUpdate(session.context, fullNode.metadata);
+            await this.therapySessionRepository.save(session);
+            
+            // Auto-advance to the first connection
+            if (fullNode.therapistChoices && fullNode.therapistChoices.length > 0) {
+                const nextId = fullNode.therapistChoices[0].nextNode?.id;
+                if (nextId) {
+                    const nextNode = await this.dialogueNodeRepository.findByID(nextId);
+                    return this.processCurrentNodeRecursive(session, nextNode);
+                }
+            }
+        }
+        // CASE 2: Logic Check (Invisible)
+        else if (fullNode.type === NodeType.LOGIC) {
+            const result = this.simulationService.evaluateLogic(session.context, fullNode.metadata);
+            
+            // Convention: Choice 0 is TRUE path, Choice 1 is FALSE path
+            let nextChoice = fullNode.therapistChoices[0]; // Default to True/First
+            
+            if (!result && fullNode.therapistChoices.length > 1) {
+                nextChoice = fullNode.therapistChoices[1]; // False/Second
+            }
+
+            if (nextChoice && nextChoice.nextNode) {
+                const nextNode = await this.dialogueNodeRepository.findByID(nextChoice.nextNode.id);
+                return this.processCurrentNodeRecursive(session, nextNode);
+            }
+        }
+        // CASE 3: Random (Invisible)
+        else if (fullNode.type === NodeType.RANDOM) {
+            const choices = fullNode.therapistChoices;
+            if (choices.length > 0) {
+                const randomIndex = Math.floor(Math.random() * choices.length);
+                const randomChoice = choices[randomIndex];
+                if (randomChoice.nextNode) {
+                    const nextNode = await this.dialogueNodeRepository.findByID(randomChoice.nextNode.id);
+                    return this.processCurrentNodeRecursive(session, nextNode);
+                }
+            }
+        }
+        // CASE 4: Observation (System Message)
+        else if (fullNode.type === NodeType.OBSERVATION) {
+            await this.logMessage(session, SenderType.BOT, `[OBSERVATION] ${fullNode.botText}`);
+            
+            // Auto advance
+            if (fullNode.therapistChoices && fullNode.therapistChoices.length > 0) {
+                const nextId = fullNode.therapistChoices[0].nextNode?.id;
+                if (nextId) {
+                    const nextNode = await this.dialogueNodeRepository.findByID(nextId);
+                    return this.processCurrentNodeRecursive(session, nextNode);
+                }
+            }
+        }
+        // CASE 5: End Node
+        else if (fullNode.isEndNode || fullNode.type === NodeType.END) {
+            session.endTime = new Date().toISOString();
+            if (fullNode.botText) {
+                await this.logMessage(session, SenderType.BOT, fullNode.botText);
+            }
+            await this.therapySessionRepository.save(session);
+            return;
+        }
+        // CASE 6: Standard Dialogue / Root (Visible)
+        else {
+            // Bot Speaks
+            if (fullNode.botText) {
+                await this.logMessage(session, SenderType.BOT, fullNode.botText);
+            }
+            await this.therapySessionRepository.save(session);
+            // We stop here and wait for user input
+            return;
+        }
     }
 
     async submitDiagnosis(sessionID: number, conditionID: number): Promise<any> {
@@ -90,7 +178,7 @@ export class TherapySessionService {
         // Evaluate
         const evaluation = this.simulationService.evaluateDiagnosis(session.scenario, submittedCondition);
 
-        // Update Session
+        // Update session
         session.finalDiagnosis = submittedCondition;
         session.isDiagnosisCorrect = evaluation.isCorrect;
         
@@ -123,12 +211,13 @@ export class TherapySessionService {
         if (session.currentDialogueNodeID && !session.endTime) {
             const currentNode = await this.dialogueNodeRepository.repo.findOne({
                 where: { id: session.currentDialogueNodeID },
-                relations: ["therapistChoices", "therapistChoices.nextNode"]
+                relations: ["therapistChoices", "therapistChoices.nextNode"],
+                order: { therapistChoices: { orderIndex: "ASC" } }
             });
             
             if (currentNode) {
                 availableChoices = currentNode.therapistChoices;
-                isEndNode = currentNode.isEndNode;
+                isEndNode = currentNode.isEndNode || currentNode.type === NodeType.END;
             }
         } else {
             isEndNode = true;
@@ -181,6 +270,7 @@ export class TherapySessionService {
             content,
             timestamp: new Date().toISOString()
         });
+        
         await this.messageRepository.save(msg);
     }
 }

@@ -42,6 +42,37 @@
   animation: fadeIn 0.4s ease-in-out;
 }
 
+/* --- Observation & Debug Styles (New) --- */
+.observation-card {
+  @apply relative w-full max-w-[85%] md:max-w-[75%] mx-auto my-6 p-4 rounded-xl border-l-4 shadow-sm transition-all;
+  background: linear-gradient(to right, rgba(255, 251, 235, 0.8), rgba(255, 255, 255, 0.5));
+  border-color: #f59e0b; /* Amber-500 */
+  border-width: 1px 1px 1px 4px;
+}
+.dark .observation-card {
+  background: linear-gradient(to right, rgba(66, 32, 6, 0.4), rgba(31, 41, 55, 0.4));
+  border-color: #d97706; /* Amber-600 */
+}
+
+.debug-panel {
+  @apply fixed right-6 top-24 w-64 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl p-4 z-40 transition-all duration-300 transform translate-x-0;
+  max-height: calc(100vh - 150px);
+  overflow-y: auto;
+}
+.debug-panel.collapsed {
+  transform: translateX(calc(100% + 24px));
+}
+
+.debug-row {
+  @apply flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-800 text-xs font-mono;
+}
+.debug-key {
+  @apply text-gray-500 dark:text-gray-400 font-bold;
+}
+.debug-val {
+  @apply text-[#5B3E86] dark:text-[#a78bfa] font-bold bg-purple-50 dark:bg-purple-900/30 px-1.5 py-0.5 rounded;
+}
+
 /* --- Tom Select Customization --- */
 .ts-control {
   @apply rounded-lg border px-4 py-2 transition shadow-none;
@@ -62,6 +93,9 @@
 .ts-dropdown {
   @apply border-gray-300 shadow-lg mt-1 rounded-lg overflow-hidden;
   z-index: 50;
+}
+.ts-dropdown-content {
+  max-height: 105px !important;
 }
 .dark .ts-dropdown {
   background-color: #1f2937; 
@@ -151,11 +185,29 @@
 .drawflow .drawflow-node .outputs {
     position: absolute !important;
     right: -10px !important;
-    top: 190px !important;
     display: flex !important;
     flex-direction: column !important;
     gap: 8px !important;
     z-index: 10;
+}
+/* Specific Node Type Alignment Overrides */
+.drawflow .drawflow-node.node-root .outputs {
+    top: 192px !important;
+}
+.drawflow .drawflow-node.node-dialogue .outputs {
+    top: 192px !important;
+}
+.drawflow .drawflow-node.node-random .outputs {
+    top: 104px !important;
+}
+.drawflow .drawflow-node.node-state_update .outputs {
+    top: 184px !important;
+}
+.drawflow .drawflow-node.node-logic .outputs {
+    top: 184px !important;
+}
+.drawflow .drawflow-node.node-observation .outputs {
+    top: 177px !important;
 }
 .drawflow .drawflow-node .output {
     position: relative;

@@ -31,6 +31,7 @@ interface SessionState {
     endTime: string | null;
     finalDiagnosis?: { id: number; name: string } | null;
     isDiagnosisCorrect?: boolean | null;
+    context?: any;
 }
 
 interface ConditionOption {
@@ -53,6 +54,7 @@ export const setupChatPage = (navigate: (path: string) => void) => {
   const sessionSubtitle = document.getElementById('session-subtitle')!;
   const endSessionMsg = document.getElementById('end-session-msg')!;
   const historyList = document.getElementById('session-history-list')!;
+  const debugContainer = document.getElementById('admin-debug-container')!;
   
   let currentSessionId: number | null = null;
   let availableConditions: ConditionOption[] = [];
@@ -120,6 +122,7 @@ export const setupChatPage = (navigate: (path: string) => void) => {
     if (mode === 'selection') {
         scenarioSelector.classList.remove('hidden');
         chatInterface.classList.add('hidden');
+        debugContainer.innerHTML = ''; // Hide debug on select
         sessionTitle.textContent = "Select a Scenario";
         sessionSubtitle.textContent = "Choose a patient to begin your diagnosis";
         sessionSubtitle.classList.remove('hidden');
@@ -320,15 +323,84 @@ export const setupChatPage = (navigate: (path: string) => void) => {
       } catch (e) { console.error(e); }
   };
 
+  // --- Rendering Logic ---
+
+  const renderAdminPanel = (context: any) => {
+      if (!isAdmin()) return;
+
+      const entries = Object.entries(context || {});
+      
+      const rows = entries.map(([key, val]) => `
+          <div class="debug-row">
+              <span class="debug-key">${key}</span>
+              <span class="debug-val">${val}</span>
+          </div>
+      `).join('');
+
+      debugContainer.innerHTML = `
+        <div class="debug-panel" id="debug-panel-inner">
+            <div class="flex justify-between items-center mb-3 border-b border-gray-200 dark:border-gray-700 pb-2">
+                <div class="flex items-center gap-2">
+                     <svg class="w-4 h-4 text-[#5B3E86]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+                     <span class="text-xs font-bold uppercase text-gray-900 dark:text-white">Internal State</span>
+                </div>
+            </div>
+            ${entries.length > 0 ? rows : '<div class="text-xs text-gray-400 italic text-center py-2">No variables set</div>'}
+        </div>
+        <button id="show-debug-btn" class="hidden fixed right-0 top-24 bg-[#5B3E86] text-white p-2 rounded-l-md shadow-lg z-50">
+             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+        </button>
+      `;
+
+      // Toggle Logic for Panel
+      const panel = document.getElementById('debug-panel-inner');
+      const showBtn = document.getElementById('show-debug-btn');
+      
+      document.getElementById('toggle-debug')?.addEventListener('click', () => {
+          panel?.classList.add('collapsed');
+          showBtn?.classList.remove('hidden');
+      });
+
+      showBtn?.addEventListener('click', () => {
+          panel?.classList.remove('collapsed');
+          showBtn.classList.add('hidden');
+      });
+  };
+
   const renderSession = (session: SessionState) => {
     sessionTitle.innerHTML = session.scenario?.name || `Session #${session.id}`;
     
+    // Render Debug Panel (Admin Only)
+    renderAdminPanel(session.context);
+
     messagesContainer.innerHTML = session.messages.map((msg, index) => {
         const isBot = msg.sender === 'BOT';
         const isLast = index === session.messages.length - 1;
         const animClass = isLast ? 'message-anim' : '';
 
         if (isBot) {
+            // Check for Observation Node pattern
+            if (msg.content.startsWith('[OBSERVATION]')) {
+                const cleanText = msg.content.replace('[OBSERVATION]', '').trim();
+                return `
+                <div class="flex w-full justify-center ${animClass}">
+                    <div class="observation-card">
+                        <div class="flex items-start gap-3">
+                            <div class="bg-amber-100 dark:bg-amber-900/40 p-1.5 rounded-lg shrink-0 text-amber-600 dark:text-amber-500 mt-0.5">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                            </div>
+                            <div>
+                                <span class="block text-[10px] font-bold uppercase tracking-widest text-amber-600 dark:text-amber-500 mb-1">Clinical Observation</span>
+                                <p class="text-sm font-medium text-gray-700 dark:text-gray-300 italic leading-relaxed">
+                                    "${cleanText}"
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            }
+
+            // Standard Bot Message
             return `
             <div class="flex w-full justify-start ${animClass}">
                 <div class="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-800 flex items-center justify-center mr-4 shrink-0 shadow-sm border border-gray-100 dark:border-gray-700">
@@ -342,6 +414,7 @@ export const setupChatPage = (navigate: (path: string) => void) => {
                 </div>
             </div>`;
         } else {
+            // User Message
             return `
             <div class="flex w-full justify-end ${animClass}">
                 <div class="max-w-[80%] md:max-w-[70%] flex flex-col items-end">

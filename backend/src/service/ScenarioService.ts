@@ -14,6 +14,8 @@ export interface GraphNode {
     isEndNode: boolean; 
     x: number;
     y: number;
+    type?: string; 
+    metadata?: any;
     choices: {
         text: string;
         targetNodeId: string; 
@@ -24,6 +26,7 @@ export interface GraphPayload {
     name: string;
     description: string;
     conditionId: number; 
+    initialState?: any;
     nodes: GraphNode[];
 }
 
@@ -53,9 +56,13 @@ export class ScenarioService {
 
         return {
             ...scenario,
+            // Pass initialState back to frontend
+            initialState: scenario.initialState || {}, 
             nodes: nodes.map(n => ({
                 id: n.id,
+                type: n.type,
                 botText: n.botText,
+                metadata: n.metadata,
                 isRoot: n.id === scenario.rootDialogueNode?.id,
                 isEndNode: n.isEndNode,
                 x: n.uiX,
@@ -135,6 +142,7 @@ export class ScenarioService {
 
         scenario.name = data.name;
         scenario.description = data.description || "";
+        scenario.initialState = data.initialState || {}; 
         
         const condition = await manager.findOne(ConditionEntity, { where: { id: data.conditionId } });
         if (!condition) throw new BadRequestError("Invalid Condition ID");
@@ -165,6 +173,12 @@ export class ScenarioService {
             nodeEntity.uiX = uiNode.x || 0;
             nodeEntity.uiY = uiNode.y || 0;
             nodeEntity.isEndNode = !!uiNode.isEndNode; 
+            
+            // Map the type and metadata from the UI
+            // @ts-ignore - using explicit casting or ignoring type check for the enum string
+            nodeEntity.type = uiNode.type || "dialogue"; 
+            nodeEntity.metadata = uiNode.metadata || null;
+
             nodeEntity.scenario = scenario;
             
             const savedNode = await manager.save(DialogueNodeEntity, nodeEntity);
@@ -198,6 +212,7 @@ export class ScenarioService {
 
             uiNode.choices.forEach((choice, index) => {
                 const targetEntity = idMap.get(choice.targetNodeId);
+                // We allow null targetEntity now (detached choices) but ideally they should be connected
                 if (targetEntity) {
                     const choiceEntity = new TherapistChoiceEntity();
                     choiceEntity.text = choice.text || "Continue";
@@ -234,7 +249,7 @@ export class ScenarioService {
         if (!nodes || nodes.length === 0) throw new BadRequestError("Scenario must have at least one node.");
 
         const root = nodes.find(n => n.isRoot);
-        const endNodes = nodes.filter(n => n.isEndNode);
+        const endNodes = nodes.filter(n => n.isEndNode || n.type === 'end'); // Check type too
 
         if (!root) throw new BadRequestError("Scenario must have a Start Node (Root).");
         if (endNodes.length === 0) throw new BadRequestError("Scenario must have at least one End Node.");

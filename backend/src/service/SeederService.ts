@@ -5,8 +5,84 @@ import { CopingMechanismEntity } from "../entity/CopingMechanismEntity";
 import { SymptomEntity } from "../entity/SymptomEntity";
 import { ConditionEntity } from "../entity/ConditionEntity";
 import { ScenarioEntity } from "../entity/ScenarioEntity";
-import { DialogueNodeEntity } from "../entity/DialogueNodeEntity";
+import { DialogueNodeEntity, NodeType } from "../entity/DialogueNodeEntity";
 import { TherapistChoiceEntity } from "../entity/TherapistChoiceEntity";
+import { AppDataSource } from "../data-source"; // Import DataSource for clearing tables
+
+// --- Visual Layout Constants ---
+const COL_WIDTH = 1000;
+const ROW_HEIGHT = 500;
+
+/**
+ * Helper class to build scenarios programmatically with a grid-based visual layout.
+ */
+class ScenarioBuilderHelper {
+    private scenario: ScenarioEntity;
+    private nodeRepo: BaseRepository<DialogueNodeEntity>;
+    private choiceRepo: BaseRepository<TherapistChoiceEntity>;
+
+    constructor(
+        scenario: ScenarioEntity,
+        nodeRepo: BaseRepository<DialogueNodeEntity>,
+        choiceRepo: BaseRepository<TherapistChoiceEntity>
+    ) {
+        this.scenario = scenario;
+        this.nodeRepo = nodeRepo;
+        this.choiceRepo = choiceRepo;
+    }
+
+    /**
+     * Creates a node at a specific Grid position.
+     */
+    async addNode(col: number, row: number, type: NodeType, text: string = "", metadata: any = null): Promise<DialogueNodeEntity> {
+        return await this.nodeRepo.save(this.nodeRepo.create({
+            scenario: this.scenario,
+            type: type,
+            botText: text,
+            metadata: metadata,
+            uiX: col * COL_WIDTH,
+            uiY: row * ROW_HEIGHT,
+            isEndNode: type === NodeType.END
+        }));
+    }
+
+    async addDialogue(col: number, row: number, text: string) {
+        return this.addNode(col, row, NodeType.DIALOGUE, text);
+    }
+
+    async addObservation(col: number, row: number, text: string) {
+        return this.addNode(col, row, NodeType.OBSERVATION, text);
+    }
+
+    async addStateUpdate(col: number, row: number, variable: string, operator: 'add' | 'sub' | 'set' | 'mult', value: number) {
+        return this.addNode(col, row, NodeType.STATE_UPDATE, "", { variable, operator, value });
+    }
+
+    async addLogic(col: number, row: number, variable: string, operator: '>' | '<' | '==' | '!=' | '>=' | '<=', value: number) {
+        return this.addNode(col, row, NodeType.LOGIC, "", { variable, operator, value });
+    }
+
+    async addRandom(col: number, row: number) {
+        return this.addNode(col, row, NodeType.RANDOM, "", null);
+    }
+
+    async addEnd(col: number, row: number, text: string) {
+        return this.addNode(col, row, NodeType.END, text);
+    }
+
+    /**
+     * Connects two nodes. 
+     * Note: For LOGIC nodes, the orderIndex determines the path (0=True, 1=False).
+     */
+    async connect(source: DialogueNodeEntity, target: DialogueNodeEntity, text: string, orderIndex: number = 0) {
+        await this.choiceRepo.save(this.choiceRepo.create({
+            sourceNode: source,
+            nextNode: target,
+            text: text,
+            orderIndex: orderIndex
+        }));
+    }
+}
 
 export class SeederService {
     constructor(
@@ -23,8 +99,61 @@ export class SeederService {
     async seed() {
         const existingCount = await this.triggerRepo.repo.count();
         if (existingCount > 0) {
-            console.log("Database already seeded with clinical data.");
+            console.log("Database already seeded. Skipping.");
             return;
+        }
+
+        console.log("Seeding clinical data...");
+        const conditionMap = await this.seedClinicalData();
+
+        console.log("Seeding Scenario 1: The Overwhelmed Architect...");
+
+        const gad = conditionMap.get("Generalized Anxiety Disorder");
+        if (!gad) {
+            throw new Error("Condition 'Generalized Anxiety Disorder' not found in conditionMap");
+        }
+
+        await this.createAnxietyScenario(gad);
+
+        console.log("Seeding complete.");
+    }
+
+    /**
+     * Call this manually if you need to wipe the DB during dev (be careful!)
+     */
+    async clearDatabase() {
+        const entities = [
+            "therapist_choices", "messages", "therapy_sessions", 
+            "dialogue_nodes", "scenarios", "condition_symptoms", 
+            "symptom_triggers", "symptom_moods", "symptom_coping_mechanisms",
+            "conditions", "symptoms", "triggers", "moods", "coping_mechanisms"
+        ];
+        
+        console.log("Clearing database...");
+        try {
+            await AppDataSource.query("SET FOREIGN_KEY_CHECKS = 0;");
+            for (const entity of entities) {
+                await AppDataSource.query(`TRUNCATE TABLE ${entity};`);
+            }
+            await AppDataSource.query("SET FOREIGN_KEY_CHECKS = 1;");
+            console.log("Database cleared.");
+        } catch (error) {
+            console.error("Error clearing database:", error);
+        }
+    }
+
+        private async seedClinicalData(): Promise<Map<string, ConditionEntity>> {
+        const existingCount = await this.triggerRepo.repo.count();
+        if (existingCount > 0) {
+            console.log("Database already seeded with clinical data.");
+
+            const existingConditions = await this.conditionRepo.repo.find();
+            const existingConditionMap = new Map<string, ConditionEntity>();
+            for (const cond of existingConditions) {
+                existingConditionMap.set(cond.name, cond);
+            }
+
+            return existingConditionMap;
         }
 
         console.log("Seeding extensive clinical data...");
@@ -210,690 +339,642 @@ export class SeederService {
             conditionMap.set(c.name, ent);
         }
 
-        console.log("Clinical data seeded. Creating complex scenario...");
+        console.log("Clinical data seeding complete.");
 
-        // Case Study: The Overwhelmed Architect
-        // Condition: Generalized Anxiety Disorder
-        
-        await this.createAnxietyScenario(conditionMap.get("Generalized Anxiety Disorder"));
-
-        console.log("Seeding complete.");
+        return conditionMap;
     }
 
     private async createAnxietyScenario(correctDiagnosis: ConditionEntity) {
-        // reate scenario container
-        const scenario = await this.scenarioRepo.save(this.scenarioRepo.create({
-            name: "Case Study: The Overwhelmed Architect",
-            description: "Alex (27) is a junior architect who recently received a major promotion. Since accepting the role two months ago, Alex reports feeling 'on edge' constantly, having trouble sleeping, and worrying excessively about minor details in blueprints. Alex fears being fired despite positive feedback.",
-            correctDiagnosis: correctDiagnosis
-        }));
-
-        // Helper to create nodes
-        const createNode = async (text: string, x: number, y: number, isEnd = false) => {
-            return await this.nodeRepo.save(this.nodeRepo.create({
-                botText: text,
-                uiX: x,
-                uiY: y,
-                isEndNode: isEnd,
-                scenario: scenario
-            }));
-        };
-
-        // Helper to create choices
-        const linkNode = async (src: DialogueNodeEntity, target: DialogueNodeEntity, text: string, order = 0) => {
-            await this.choiceRepo.save(this.choiceRepo.create({
-                sourceNode: src,
-                nextNode: target,
-                text: text,
-                orderIndex: order
-            }));
-        };
-
-        // X positions per "level" to make a clear left-to-right flow
-        const X0 = 0;    // Intro
-        const X1 = 1800;   // Initial investigation
-        const X2 = 3600;   // Physical / cognitive / self-doubt / strengths
-        const X3 = 5400;  // Sleep / coping / functioning / history
-        const X4 = 7200;  // Timeline / panic / risk / values
-        const X5 = 9000;  // Rule-outs
-        const X6 = 10800;  // Endings
-
-        // Y step for vertical spacing
-        const Y_STEP = 600;
-
-        // -------------------------
-        // LEVEL 0: INTRO
-        // -------------------------
-        const nRoot = await createNode(
-            "Hi there. Thanks for seeing me on such short notice. I... I feel like I'm losing my grip on things at work, and it's starting to bleed into everything else.",
-            X0,
-            3 * Y_STEP // centered-ish
+        // Create Scenario Container
+        const scenario = await this.scenarioRepo.save(
+            this.scenarioRepo.create({
+                name: "Case Study: The Overwhelmed Architect",
+                description:
+                    "Alex (27) is a junior architect who recently received a major promotion. Reports feeling 'on edge' constantly, trouble sleeping, and excessive worry about minor details.",
+                correctDiagnosis: correctDiagnosis,
+                initialState: {
+                    anxiety_score: 0,
+                    rapport: 50,
+                    catastrophizing: 0,
+                    trauma_focus: 0,
+                    depression_focus: 0,
+                    attention_focus: 0
+                }
+            })
         );
-        scenario.rootDialogueNode = nRoot;
+
+        const builder = new ScenarioBuilderHelper(scenario, this.nodeRepo, this.choiceRepo);
+
+        // --- ROOT (Col 0) ---
+        const root = await builder.addNode(
+            0,
+            3,
+            NodeType.ROOT,
+            "Hey. Thanks for squeezing me in. I only have like half an hour before a project meeting, but I feel like I’m constantly one mistake away from everything collapsing."
+        );
+        scenario.rootDialogueNode = root;
         await this.scenarioRepo.save(scenario);
 
-        // -------------------------
-        // LEVEL 1: INITIAL INVESTIGATION
-        // -------------------------
-        const nExplode = await createNode(
-            "It's just everything. The deadlines, the emails. I stare at my screen for hours afraid to make a line on a drawing because if it's wrong, the building falls down. Logically I know that's stupid, but I can't stop the thought.",
-            X1,
-            1 * Y_STEP
+        // --- PHASE 1: FIRST THERAPIST MOVE (Col 1) ---
+
+        // 1A – Empathic, open-ended
+        const suWarmRapport = await builder.addStateUpdate(0.5, 2, "rapport", "add", 15);
+        const suWarmAnxiety = await builder.addStateUpdate(0.75, 2, "anxiety_score", "add", 5);
+
+        const nWarmOpen = await builder.addDialogue(
+            1.5,
+            2,
+            "It’s like my brain is running disaster simulations all day. Even when things are fine on paper, I’m imagining worst-case scenarios."
         );
 
-        const nVague = await createNode(
-            "I don't know, just stress I guess. New job. Big expectations. Maybe I'm just not cut out for it.",
-            X1,
-            2 * Y_STEP
+        await builder.connect(
+            root,
+            suWarmRapport,
+            "It sounds really intense to live with that constant sense of ‘one mistake away.’ Can you walk me through a recent day where this felt especially strong?"
+        );
+        await builder.connect(suWarmRapport, suWarmAnxiety, "");
+        await builder.connect(suWarmAnxiety, nWarmOpen, "");
+
+        // 1B – Symptom checklist / medicalized
+        const suChecklistRapport = await builder.addStateUpdate(0.5, 1, "rapport", "sub", 5);
+        const suChecklistAnxiety = await builder.addStateUpdate(0.75, 1, "anxiety_score", "add", 3);
+
+        const nChecklistIntro = await builder.addDialogue(
+            1.5,
+            1,
+            "Um, okay. I guess… I don’t know what box I fit in. I’m tired, I’m jittery, I can’t shut my brain off. Does that help?"
         );
 
-        const nContext = await createNode(
-            "The promotion sounded great on paper. More responsibility, bigger projects. But ever since, it feels like there's this spotlight on me. Like every tiny mistake will prove they picked the wrong person.",
-            X1,
-            3 * Y_STEP
+        await builder.connect(
+            root,
+            suChecklistRapport,
+            "To make sure I understand quickly, I’m going to ask you a few specific symptom questions—sleep, appetite, energy, and focus. Does that sound alright?"
+        );
+        await builder.connect(suChecklistRapport, suChecklistAnxiety, "");
+        await builder.connect(suChecklistAnxiety, nChecklistIntro, "");
+
+        // 1C – Stress/burnout framing
+        const suStressRapport = await builder.addStateUpdate(0.5, 3, "rapport", "add", 5);
+        const suStressDepression = await builder.addStateUpdate(0.75, 3, "depression_focus", "add", 5);
+
+        const nStressIntro = await builder.addDialogue(
+            1.5,
+            3,
+            "Everyone keeps saying, ‘Congrats on the promotion!’ and I smile and say thanks, but inside I’m thinking, ‘You have no idea how close I am to dropping the ball.’ It feels like pure burnout."
         );
 
-        const nRapport = await createNode(
-            "I mean, I’ve always been the 'responsible one'. People expect me to handle things. So I didn't exactly tell anyone I'm freaking out. I just keep saying I'm fine.",
-            X1,
-            4 * Y_STEP
+        await builder.connect(
+            root,
+            suStressRapport,
+            "A promotion plus a big meeting soon—that’s a lot to juggle. I’m curious: in your mind, is this mostly about work stress and burnout, or something different?"
+        );
+        await builder.connect(suStressRapport, suStressDepression, "");
+        await builder.connect(suStressDepression, nStressIntro, "");
+
+        // 1D – Rushed, meds-first framing
+        const suMedsRapport = await builder.addStateUpdate(0.5, 4, "rapport", "sub", 15);
+        const suMedsAnxiety = await builder.addStateUpdate(0.75, 4, "anxiety_score", "add", 2);
+
+        const nMedFirstIntro = await builder.addDialogue(
+            1.5,
+            4,
+            "If there’s a pill that makes me stop overthinking everything, I’ll take ten. I don’t know if this is ‘anxiety’ or whatever, I just know I can’t keep going like this."
         );
 
-        // Root choices (4 options)
-        await linkNode(
-            nRoot,
-            nExplode,
-            "When you say 'losing your grip', can you walk me through a specific moment when that feeling shows up most strongly?",
-            0
+        await builder.connect(
+            root,
+            suMedsRapport,
+            "Since we don’t have much time, I’d like to get a quick sense of symptoms and talk about whether medication might help. Does that sound like what you’re looking for today?"
         );
-        await linkNode(
-            nRoot,
-            nVague,
-            "It sounds like this new role is carrying a lot of weight for you. What makes you wonder if you're 'not cut out for it'?",
-            1
+        await builder.connect(suMedsRapport, suMedsAnxiety, "");
+        await builder.connect(suMedsAnxiety, nMedFirstIntro, "");
+
+        // --- PHASE 2A: WARM-OPEN BRANCH (Col 2) ---
+
+        const nWarmOpen_Somatic = await builder.addDialogue(
+            2.5,
+            1,
+            "By lunch my shoulders are up near my ears. My stomach is in knots, and sometimes my heart races when I’m literally just sitting at my desk."
         );
-        await linkNode(
-            nRoot,
-            nContext,
-            "Tell me a bit more about the promotion itself—what changed day to day for you?",
-            2
+        const nWarmOpen_Cognitive = await builder.addDialogue(
+            2.5,
+            2,
+            "My brain runs through everything that could go wrong: missed details, angry clients, a tiny mistake that ruins a whole project. Even at home I’m mentally editing drawings."
         );
-        await linkNode(
-            nRoot,
-            nRapport,
-            "Before we get into details, how have you been coping with all of this on your own so far?",
-            3
+        const nWarmOpen_History = await builder.addDialogue(
+            2.5,
+            3,
+            "I’ve always been like this, honestly. Nervous kid, perfectionist student. The promotion just turned the volume way up."
         );
 
-        // -------------------------
-        // LEVEL 2: PHYSICAL / COGNITIVE / SELF-DOUBT / STRENGTHS
-        // -------------------------
-        const nPhysical = await createNode(
-            "My stomach is in knots every morning. I get these tension headaches by 2 PM that feel like a vice. And my heart... sometimes it beats so hard I can hear it in my ears during meetings.",
-            X2,
-            1 * Y_STEP
+        await builder.connect(
+            nWarmOpen,
+            nWarmOpen_Somatic,
+            "When you’re in that disaster-simulation mode, what do you notice in your body—heart, breathing, tension?"
+        );
+        await builder.connect(
+            nWarmOpen,
+            nWarmOpen_Cognitive,
+            "I’d like to hear more about those ‘disaster simulations’—what kinds of thoughts show up most often?"
+        );
+        await builder.connect(
+            nWarmOpen,
+            nWarmOpen_History,
+            "Has your mind always worked like this, or does this feel totally new since the promotion?"
         );
 
-        const nCognitive = await createNode(
-            "My mind won't shut off. Even when I'm home, I'm mentally drafting emails or re-checking calculations I did hours ago. It's like I have 50 browser tabs open and they're all frozen.",
-            X2,
-            2 * Y_STEP
+        // Somatic branch from warm
+        const suSomaticAnxiety = await builder.addStateUpdate(3.5, 1, "anxiety_score", "add", 5);
+        const suSomaticCatastrophizing = await builder.addStateUpdate(3.75, 1, "catastrophizing", "add", 5);
+
+        const nWarmSomaticDetail = await builder.addDialogue(
+            4.5,
+            1,
+            "Sometimes I have to step into the stairwell because I’m convinced I’m about to pass out. Then my smartwatch tells me my heart rate is through the roof, which makes me panic more."
         );
 
-        const nDefensive = await createNode(
-            "Look, I just need something to help me focus. I'm tired. I'm not crazy.",
-            X2,
-            3 * Y_STEP
+        await builder.connect(
+            nWarmOpen_Somatic,
+            suSomaticAnxiety,
+            "Those physical sensations sound really intense. Have they ever built up into moments that feel like panic attacks?"
+        );
+        await builder.connect(suSomaticAnxiety, suSomaticCatastrophizing, "");
+        await builder.connect(suSomaticCatastrophizing, nWarmSomaticDetail, "");
+
+        // Cognitive branch from warm
+        const suCognitiveAnxiety = await builder.addStateUpdate(3.5, 2, "anxiety_score", "add", 8);
+        const suCognitiveCatastrophizing = await builder.addStateUpdate(3.75, 2, "catastrophizing", "add", 8);
+
+        const nWarmCognitiveDetail = await builder.addDialogue(
+            4.5,
+            2,
+            "It’s not just work. I’ll be making dinner and think, ‘What if I gave someone food poisoning?’ Or texting a friend and think, ‘What if they secretly hate me now?’ It’s ridiculous, but it feels real."
         );
 
-        const nImposter = await createNode(
-            "It feels like everyone else knows what they’re doing, and I'm pretending. Every time I submit a drawing, I wait for someone to say, 'Wow, this is amateur hour.'",
-            X2,
-            4 * Y_STEP
+        await builder.connect(
+            nWarmOpen_Cognitive,
+            suCognitiveAnxiety,
+            "It sounds like your mind is constantly scanning for what might go wrong—in work and beyond. Does that show up in other parts of your life too?"
+        );
+        await builder.connect(suCognitiveAnxiety, suCognitiveCatastrophizing, "");
+        await builder.connect(suCognitiveCatastrophizing, nWarmCognitiveDetail, "");
+
+        // History branch from warm
+        const suHistoryAnxiety = await builder.addStateUpdate(3.5, 3, "anxiety_score", "add", 4);
+        const suHistoryRapport = await builder.addStateUpdate(3.75, 3, "rapport", "add", 5);
+
+        const nWarmHistoryDetail = await builder.addDialogue(
+            4.5,
+            3,
+            "In school I would triple-check assignments, reread emails ten times… People called me ‘thorough.’ Now it’s like the same habits on steroids."
         );
 
-        const nStrengths = await createNode(
-            "I mean, I know I'm good at what I do. I graduated near the top of my class, and my mentor said I had 'an eye for detail'. I just... don't trust that right now.",
-            X2,
-            5 * Y_STEP
+        await builder.connect(
+            nWarmOpen_History,
+            suHistoryAnxiety,
+            "That sounds like a long-standing pattern of worry and checking. How has that changed since the promotion?"
+        );
+        await builder.connect(suHistoryAnxiety, suHistoryRapport, "");
+        await builder.connect(suHistoryRapport, nWarmHistoryDetail, "");
+
+        // Choices from nWarmSomaticDetail (stay somatic vs broaden vs minimize)
+        const nWarmSomatic_Broaden = await builder.addDialogue(
+            5.5,
+            0.5,
+            "It’s not just my body freaking out. I lie in bed thinking through every little thing that could go wrong the next day."
+        );
+        const nWarmSomatic_Medical = await builder.addDialogue(
+            5.5,
+            1.5,
+            "I’ve done the blood tests and ECGs. Doctors keep saying ‘stress.’ I get that, but it feels like something is fundamentally wrong with me."
+        );
+        const nWarmSomatic_Minimize = await builder.addDialogue(
+            5.5,
+            2.5,
+            "I don’t know, maybe I’m overreacting. Everyone is stressed. I just happen to freak out in stairwells, I guess."
         );
 
-        // From nExplode
-        await linkNode(
-            nExplode,
-            nPhysical,
-            "That sounds really intense. When you're frozen like that at your screen, what happens in your body?",
-            0
+        await builder.connect(
+            nWarmSomaticDetail,
+            nWarmSomatic_Broaden,
+            "Beyond those intense physical episodes, how much does worry follow you into the rest of your day—thoughts at night, decisions, relationships?"
         );
-        await linkNode(
-            nExplode,
-            nCognitive,
-            "You mentioned you can't stop the thought. What's the mental loop like when you're away from the computer?",
-            1
+        await builder.connect(
+            nWarmSomaticDetail,
+            nWarmSomatic_Medical,
+            "Have doctors ruled out medical causes for these episodes, or is that still an open question for you?"
         );
-        await linkNode(
-            nExplode,
-            nImposter,
-            "It sounds like you're carrying a lot of responsibility. Do you ever feel like an 'imposter' in this role?",
-            2
+        await builder.connect(
+            nWarmSomaticDetail,
+            nWarmSomatic_Minimize,
+            "Part of you sounds unsure if this is ‘bad enough’ to count as a problem. Can you say more about that?"
         );
 
-        // From nVague
-        await linkNode(
-            nVague,
-            nExplode,
-            "A lot of people say 'just stress' when it’s actually overwhelming. Can we slow it down and look at a specific example from this week?",
-            0
+        // --- PHASE 2B: CHECKLIST BRANCH (Col 2) ---
+
+        const nChecklist_Sleep = await builder.addDialogue(
+            2.5,
+            0,
+            "Sleep is a joke. I either can’t fall asleep because I’m replaying my day, or I wake up at 3am thinking about a tiny detail on a drawing."
         );
-        await linkNode(
-            nVague,
-            nDefensive,
-            "When you say maybe you're not cut out for it, is that something you've heard from others or more of an internal voice?",
-            1
+        const nChecklist_Mood = await builder.addDialogue(
+            2.5,
+            1,
+            "I wouldn’t say I’m ‘sad’ exactly. More… wired and exhausted. People keep asking if I’m okay and I just laugh it off."
         );
-        await linkNode(
-            nVague,
-            nStrengths,
-            "Before this promotion, what kind of feedback were you getting about your work and abilities?",
-            2
+        const nChecklist_Focus = await builder.addDialogue(
+            2.5,
+            2,
+            "My focus is all over the place, but it’s not like random distractions. It’s my own brain hijacking me with ‘what if you missed something’ thoughts."
         );
 
-        // From nContext
-        await linkNode(
-            nContext,
-            nCognitive,
-            "That 'spotlight' image is powerful. How does your mind react when you imagine being under that microscope?",
-            0
+        await builder.connect(
+            nChecklistIntro,
+            nChecklist_Sleep,
+            "Let’s start with sleep. How has your sleep been over the past few months?"
         );
-        await linkNode(
-            nContext,
-            nPhysical,
-            "As you describe that pressure, what do you notice in your body right now?",
-            1
+        await builder.connect(
+            nChecklistIntro,
+            nChecklist_Mood,
+            "What about your mood overall—feeling low, flat, hopeless, or tearful?"
         );
-        await linkNode(
-            nContext,
-            nImposter,
-            "Do you ever find yourself thinking they made a mistake choosing you?",
-            2
+        await builder.connect(
+            nChecklistIntro,
+            nChecklist_Focus,
+            "How is your concentration—any trouble staying on task, organizing, or following through?"
         );
 
-        // From nRapport
-        await linkNode(
-            nRapport,
-            nDefensive,
-            "Being the 'responsible one' can make it harder to ask for help. What makes it difficult to let people see you're struggling?",
-            0
-        );
-        await linkNode(
-            nRapport,
-            nStrengths,
-            "People expecting a lot from you usually means you've shown them you can handle things. What strengths do you think they see in you?",
-            1
-        );
-        await linkNode(
-            nRapport,
-            nCognitive,
-            "On the outside you’re saying 'I’m fine.' On the inside, what does the mental noise sound like?",
-            2
+        // From checklist-sleep
+        const suChecklistSleepAnxiety = await builder.addStateUpdate(3.5, 0, "anxiety_score", "add", 4);
+        const nChecklistSleepMore = await builder.addDialogue(
+            4.5,
+            0,
+            "I try all the sleep-hygiene hacks on TikTok. Then I feel guilty for not doing them perfectly and end up scrolling instead of resting."
         );
 
-        // -------------------------
-        // LEVEL 3: SLEEP, COPING, FUNCTIONING, HISTORY, SUPPORT
-        // -------------------------
-        const nSleep = await createNode(
-            "Sleep? What sleep? I lay there for three hours staring at the ceiling. When I do sleep, I dream about work. I wake up with my jaw clenched.",
-            X3,
-            1 * Y_STEP
+        await builder.connect(
+            nChecklist_Sleep,
+            suChecklistSleepAnxiety,
+            "It sounds like worry is really active at night. What tends to run through your mind when you can’t sleep?"
+        );
+        await builder.connect(suChecklistSleepAnxiety, nChecklistSleepMore, "");
+
+        // From checklist-mood (depression-focus vs anxiety-focus)
+        const suChecklistMoodDep = await builder.addStateUpdate(3.5, 1, "depression_focus", "add", 10);
+        const suChecklistMoodAnx = await builder.addStateUpdate(3.75, 1, "anxiety_score", "add", 3);
+
+        const nChecklistMoodDepPath = await builder.addDialogue(
+            4.5,
+            1,
+            "I cancel plans a lot because I’m so drained. People probably think I’m depressed. I still care about things, though—I just feel too tense to enjoy them."
         );
 
-        const nCopingBad = await createNode(
-            "I drink about 6 coffees to get through the morning. At night... a few glasses of wine helps take the edge off, but then I wake up at 3 AM anyway.",
-            X3,
-            2 * Y_STEP
+        await builder.connect(
+            nChecklist_Mood,
+            suChecklistMoodDep,
+            "The exhaustion and canceled plans you mention can be part of depression. Do you feel like you’ve lost interest or pleasure in things you used to enjoy?"
+        );
+        await builder.connect(suChecklistMoodDep, suChecklistMoodAnx, "");
+        await builder.connect(suChecklistMoodAnx, nChecklistMoodDepPath, "");
+
+        // From checklist-focus (ADHD vs anxiety framing)
+        const suChecklistFocusADHD = await builder.addStateUpdate(3.5, 2, "attention_focus", "add", 10);
+        const suChecklistFocusAnx = await builder.addStateUpdate(3.75, 2, "anxiety_score", "add", 4);
+
+        const nChecklistFocusADHDPath = await builder.addDialogue(
+            4.5,
+            2,
+            "I’ve wondered about ADHD, but when I’m not anxious I can hyper-focus for hours. It’s like anxiety is the thing that scatters me."
         );
 
-        const nFunctioning = await createNode(
-            "I'm still getting things done, technically. But I triple-check everything, so it takes twice as long. My inbox is a disaster because I'm scared to open half the emails.",
-            X3,
-            3 * Y_STEP
+        await builder.connect(
+            nChecklist_Focus,
+            suChecklistFocusADHD,
+            "A lot of adults with ADHD feel overwhelmed at work promotions. Does it feel like you’ve always struggled with attention and organization, even as a kid?"
+        );
+        await builder.connect(suChecklistFocusADHD, suChecklistFocusAnx, "");
+        await builder.connect(suChecklistFocusAnx, nChecklistFocusADHDPath, "");
+
+        // --- PHASE 2C: STRESS/BURNOUT BRANCH (Col 2) ---
+
+        const nStress_Future = await builder.addDialogue(
+            2.5,
+            3,
+            "Part of me thinks, ‘This is just what being successful feels like—constant pressure.’ Another part of me wonders if I’m actually falling apart."
+        );
+        const nStress_Hopeless = await builder.addDialogue(
+            2.5,
+            4,
+            "Sometimes I think, ‘If I just quit and moved somewhere no one knows me, maybe I could finally breathe.’ I don’t *want* to die, I just want everything to stop for a while."
+        );
+        const nStress_Coping = await builder.addDialogue(
+            2.5,
+            5,
+            "I drink more than I used to. And I ‘accidentally’ forget to open email on weekends. Avoidance is kind of my hobby."
         );
 
-        const nHistory = await createNode(
-            "Honestly, I've always been a worrier. In school, I'd reread emails to professors like ten times before sending. This is the first time it's felt like it's taking over my whole life, though.",
-            X3,
-            4 * Y_STEP
+        await builder.connect(
+            nStressIntro,
+            nStress_Future,
+            "When you imagine staying in this role for the next year or two, what goes through your mind?"
+        );
+        await builder.connect(
+            nStressIntro,
+            nStress_Hopeless,
+            "You mentioned feeling close to dropping the ball. Do thoughts ever drift toward not wanting to be here or wishing you could disappear?"
+        );
+        await builder.connect(
+            nStressIntro,
+            nStress_Coping,
+            "How have you been coping with this pressure—things you do to get through the day or take the edge off?"
         );
 
-        const nSupport = await createNode(
-            "My partner says I'm ‘never really home’ even when I’m on the couch. My friends have stopped inviting me out as much because I keep saying I'm busy or too tired.",
-            X3,
-            5 * Y_STEP
+        // --- PHASE 2D: MEDS-FIRST BRANCH (Col 2) ---
+
+        const nMeds_Explore = await builder.addDialogue(
+            2.5,
+            6,
+            "If meds can quiet my brain, I’m open. I just don’t want to become a zombie. I still want to care, just… less catastrophizing."
+        );
+        const nMeds_QuickLabel = await builder.addDialogue(
+            2.5,
+            7,
+            "If we’re just slapping a label on this so I can get a prescription, call it whatever you want. ‘Anxious mess’ works."
         );
 
-        // From Physical
-        await linkNode(
-            nPhysical,
-            nSleep,
-            "Those headaches and heart pounding can be your body’s alarm system. How has all of this affected your sleep?",
-            0
+        await builder.connect(
+            nMedFirstIntro,
+            nMeds_Explore,
+            "Medication can sometimes help turn the volume down on anxiety. Before we talk specifics, I want to understand what ‘quieting your brain’ would look like for you."
         );
-        await linkNode(
-            nPhysical,
-            nCopingBad,
-            "When your body feels like that, what do you usually do to get through the day or calm down at night?",
-            1
-        );
-        await linkNode(
-            nPhysical,
-            nFunctioning,
-            "How do these physical symptoms impact your ability to get through a typical workday?",
-            2
+        await builder.connect(
+            nMedFirstIntro,
+            nMeds_QuickLabel,
+            "Based on what you’ve said, it may fit under an anxiety or depressive label. We can sort that out as we go and focus on a prescription."
         );
 
-        // From Cognitive
-        await linkNode(
-            nCognitive,
-            nSleep,
-            "That many mental 'tabs' would exhaust anyone. Do those racing thoughts follow you into bedtime?",
-            0
+        // --- LOGIC NODE: RAPPORT GATE (Col 5) ---
+        // This is one of the few convergence points: if rapport is high, Alex discloses more panic-like detail.
+        const logicRapportHigh = await builder.addLogic(5, 2.5, "rapport", ">", 55);
+
+        const nDisclosePanic = await builder.addDialogue(
+            6,
+            2,
+            "There was a day last month when I had to lock myself in a bathroom stall because I was sure I was going to pass out. My hands were shaking so much I could barely text my partner."
         );
-        await linkNode(
-            nCognitive,
-            nHistory,
-            "Have you noticed this kind of constant worry at other times in your life, or is it new with the promotion?",
-            1
-        );
-        await linkNode(
-            nCognitive,
-            nFunctioning,
-            "How is that nonstop thinking affecting your concentration and productivity at work?",
-            2
+        const nKeepSurface = await builder.addDialogue(
+            6,
+            3,
+            "I mean, it’s bad, but I’m fine. I’ve always handled things. I just… drink more coffee and triple-check everything."
         );
 
-        // From Defensive
-        await linkNode(
-            nDefensive,
-            nCopingBad,
-            "I hear that you're exhausted and want relief. What are you using right now—caffeine, alcohol, anything else—to push through?",
-            0
+        // A few different branches feed into the rapport logic:
+        await builder.connect(
+            nWarmCognitiveDetail,
+            logicRapportHigh,
+            "Hearing how wide-ranging those worries are, I’m curious: have there been moments when it tipped into feeling like panic or losing control?"
         );
-        await linkNode(
-            nDefensive,
-            nSleep,
-            "I'm not questioning your sanity. I'm interested in your exhaustion—what does a typical night of sleep look like lately?",
-            1
+        await builder.connect(
+            nChecklistSleepMore,
+            logicRapportHigh,
+            "Those restless nights sound really hard. Have your days ever built to a point where you felt like you were actually panicking?"
         );
-        await linkNode(
-            nDefensive,
-            nHistory,
-            "Needing help doesn’t mean you’re 'crazy'. Has feeling this keyed up ever shown up earlier in your life?",
-            2
+        await builder.connect(
+            nStress_Future,
+            logicRapportHigh,
+            "It sounds like you’re constantly bracing for impact. Has that ever boiled over into feeling like you’re about to lose it physically or emotionally?"
         );
 
-        // From Imposter
-        await linkNode(
-            nImposter,
-            nHistory,
-            "That fear of being 'found out' can go way back. Have you felt that in other situations, like school or previous jobs?",
-            0
-        );
-        await linkNode(
-            nImposter,
-            nFunctioning,
-            "How does that 'they’ll find out' thought affect the way you approach tasks and deadlines?",
-            1
-        );
-        await linkNode(
-            nImposter,
-            nSupport,
-            "Who in your life, if anyone, knows you're feeling this much pressure?",
-            2
+        await builder.connect(logicRapportHigh, nDisclosePanic, "High rapport – Alex opens up about panic", 0);
+        await builder.connect(logicRapportHigh, nKeepSurface, "Lower rapport – Alex stays surface-level", 1);
+
+        // --- DIVERGENT LATE BRANCHES & ENDINGS (Col 7+) ---
+
+        // 1) GAD-CONSISTENT PATH (GOOD DATA, CORRECT)
+        const nGlobalWorry = await builder.addDialogue(
+            7,
+            2,
+            "It’s not just work. I overthink texts, grocery lists, everything. My brain is always scanning for what could go wrong."
         );
 
-        // From Strengths
-        await linkNode(
-            nStrengths,
-            nSupport,
-            "It sounds like you’ve had genuine competence and support in the past. Right now, who’s in your corner while you’re going through this?",
-            0
-        );
-        await linkNode(
-            nStrengths,
-            nFunctioning,
-            "Having an 'eye for detail' can be a strength and a burden. How is that perfectionism showing up in your day-to-day tasks?",
-            1
-        );
-        await linkNode(
-            nStrengths,
-            nHistory,
-            "You’ve been capable for a long time. Have worries like this been background noise for years, or do they feel more recent?",
-            2
+        await builder.connect(
+            nDisclosePanic,
+            nGlobalWorry,
+            "Between those intense episodes and the constant scanning you described earlier, it sounds like worry shows up across a lot of areas of life, not just the promotion. Is that right?"
         );
 
-        // -------------------------
-        // LEVEL 4: PANIC SPIKES, TIMELINE, RISK, VALUES, RELATIONSHIP STRAIN
-        // -------------------------
-        const nTimeline = await createNode(
-            "Since the promotion, about two months ago. But honestly? I've always been a 'worrier'. Even in college, I'd double-check papers ten times. It's just... unmanageable now.",
-            X4,
-            1 * Y_STEP
+        const nRuleOutsGAD = await builder.addDialogue(
+            8,
+            2,
+            "I don’t get flashbacks or anything like that. And when I’m not anxious, I can focus fine. I still enjoy things—I’m just too wound up to relax into them."
         );
 
-        const nPanic = await createNode(
-            "Yesterday I had to leave a meeting because I felt like the walls were closing in. I hid in the bathroom for 20 minutes. I can't let that happen again.",
-            X4,
-            2 * Y_STEP
+        await builder.connect(
+            nGlobalWorry,
+            nRuleOutsGAD,
+            "To help me understand, I want to check a few things: do you get vivid flashbacks to past events, feel persistently hopeless, or struggle with focus even when you’re not anxious?"
         );
 
-        const nRisk = await createNode(
-            "I'm not going to hurt myself or anything. I just fantasize about quitting, moving somewhere nobody knows me, and starting over. Then I panic because I know I can’t just walk away.",
-            X4,
-            3 * Y_STEP
+        const endGAD = await builder.addEnd(
+            9,
+            2,
+            "So you’re saying my brain’s alarm system is basically stuck on high. If we can dial the volume down on the constant worrying, I might actually be able to enjoy this promotion."
         );
 
-        const nValues = await createNode(
-            "I actually love architecture. I like creating spaces people will live in. I just hate that my brain turns every project into a life-or-death exam.",
-            X4,
-            4 * Y_STEP
+        await builder.connect(
+            nRuleOutsGAD,
+            endGAD,
+            "From what you’ve shared—longstanding, excessive worry across many areas, physical tension, sleep trouble, but no persistent hopelessness or flashbacks—this fits well with an anxiety pattern we call Generalized Anxiety Disorder."
         );
 
-        const nRelationshipStrain = await createNode(
-            "My partner says I'm 'married to my inbox'. We argue more because I'm distracted or snappy. I cancel on friends last minute, then feel guilty and even more anxious.",
-            X4,
-            5 * Y_STEP
+        // 2) MDD-LEANING MISDIAGNOSIS PATH (DEPRESSION)
+        const nDepFramed = await builder.addDialogue(
+            7,
+            0,
+            "So… we’re calling this depression? I mean, I am tired and I bail on plans, but it feels more like my mind won’t stop than like I don’t care."
         );
 
-        // From Sleep
-        await linkNode(
-            nSleep,
-            nTimeline,
-            "That pattern of lying awake and dreaming about work sounds brutal. When did you first start noticing your sleep getting this bad?",
-            0
-        );
-        await linkNode(
-            nSleep,
-            nRisk,
-            "Long-term sleep loss can really wear people down. Have things ever felt so overwhelming that you thought about quitting or giving up in some way?",
-            1
-        );
-        await linkNode(
-            nSleep,
-            nValues,
-            "Despite the exhaustion, what keeps you showing up to work each day?",
-            2
+        await builder.connect(
+            nChecklistMoodDepPath,
+            nDepFramed,
+            "Given the exhaustion, canceled plans, and how drained you feel, this could fit with a depressive picture. We might be looking at Major Depressive Disorder."
         );
 
-        // From CopingBad
-        await linkNode(
-            nCopingBad,
-            nPanic,
-            "That 3 AM wake-up after wine sounds like rebound anxiety. Have there been moments where the anxiety felt so intense you had to escape the situation?",
-            0
-        );
-        await linkNode(
-            nCopingBad,
-            nTimeline,
-            "Using caffeine and alcohol to manage this is common, but it can feed the cycle. How long have you been relying on them this heavily?",
-            1
-        );
-        await linkNode(
-            nCopingBad,
-            nRisk,
-            "When the anxiety peaks after those nights, do you ever have thoughts that worry you about your safety or future?",
-            2
+        const endMDD = await builder.addEnd(
+            8,
+            0,
+            "If this is ‘depression,’ I guess I’ll try whatever you recommend. I just hope it quiets my brain, not just knocks me out."
         );
 
-        // From Functioning
-        await linkNode(
-            nFunctioning,
-            nTimeline,
-            "You’re functioning, but at a high cost. When did work shift from 'busy' to 'unmanageable' in this way?",
-            0
-        );
-        await linkNode(
-            nFunctioning,
-            nPanic,
-            "Avoiding emails and triple-checking work are big signs of anxiety. Have there been situations where your body seemed to 'shut down' or 'freak out' at work?",
-            1
-        );
-        await linkNode(
-            nFunctioning,
-            nValues,
-            "Given how draining this is, what keeps you invested in architecture as a career?",
-            2
+        await builder.connect(
+            nDepFramed,
+            endMDD,
+            "We can move forward with a working diagnosis of Major Depressive Disorder and explore treatments aimed at your mood and energy."
         );
 
-        // From History
-        await linkNode(
-            nHistory,
-            nTimeline,
-            "So worry has been around for a long time. What feels different about the last couple of months?",
-            0
-        );
-        await linkNode(
-            nHistory,
-            nValues,
-            "Even with all that lifelong worry, what parts of your life have still felt meaningful or enjoyable?",
-            1
-        );
-        await linkNode(
-            nHistory,
-            nRisk,
-            "Sometimes when worry ramps up from 'manageable' to 'unmanageable', people start to feel stuck or trapped. Does that resonate for you?",
-            2
+        // 3) PTSD-LEANING MISDIAGNOSIS PATH (TRAUMA FOCUS)
+        const suTraumaFocus = await builder.addStateUpdate(6, 1, "trauma_focus", "add", 10);
+        const nTraumaStory = await builder.addDialogue(
+            7,
+            1,
+            "There was a bad car accident a few years back. Loud crashes still make me jump, but what really keeps me up is obsessing about messing up at work."
         );
 
-        // From Support
-        await linkNode(
-            nSupport,
-            nRelationshipStrain,
-            "It sounds like your relationships are feeling the impact too. How are things with your partner and friends these days?",
-            0
+        await builder.connect(
+            nWarmHistoryDetail,
+            suTraumaFocus,
+            "Sometimes long-standing worry can be made worse by scary experiences like accidents or losses. Has anything like that happened to you?"
         );
-        await linkNode(
-            nSupport,
-            nRisk,
-            "When the people around you are frustrated and you’re exhausted, does it ever feel like you just want to disappear from all of it?",
-            1
-        );
-        await linkNode(
-            nSupport,
-            nValues,
-            "Who or what in your life feels most important to you right now, even in the middle of all this stress?",
-            2
+        await builder.connect(suTraumaFocus, nTraumaStory, "");
+
+        const nPTSDLabel = await builder.addDialogue(
+            8,
+            1,
+            "So this might all be about that car accident? I hadn’t really connected it to work anxiety, but I guess it could be related."
         );
 
-        // -------------------------
-        // LEVEL 5: RULE-OUTS & DIAGNOSTIC CLARIFICATION
-        // -------------------------
-        const nRuleOutDepression = await createNode(
-            "No, I'm not sad. I still enjoy things when I'm not worrying. I still want to see my friends, I'm just too keyed up to sit still. I'm not hopeless, I'm just... vibrating.",
-            X5,
-            1 * Y_STEP
+        await builder.connect(
+            nTraumaStory,
+            nPTSDLabel,
+            "Given that accident and your current jumpiness, some of this may fit with a post-traumatic stress pattern."
         );
 
-        const nRuleOutPanic = await createNode(
-            "It wasn't a heart attack feeling, just an overwhelming urge to escape. It's not sudden attacks out of nowhere, it's this constant hum of dread that spikes when I'm put on the spot.",
-            X5,
-            2 * Y_STEP
+        const endPTSD = await builder.addEnd(
+            9,
+            1,
+            "If this is mostly about the accident, I guess working on that might help. It still feels like my brain just won’t stop worrying about work, though."
         );
 
-        const nRuleOutOCD = await createNode(
-            "I don’t have rituals or anything like that. I mean, I double-check things a lot, but it’s more because I’m scared of messing up, not like I 'have to' do it a certain way to feel safe.",
-            X5,
-            3 * Y_STEP
+        await builder.connect(
+            nPTSDLabel,
+            endPTSD,
+            "We can use a working diagnosis of Post-Traumatic Stress Disorder and focus treatment on processing that event and its impact on your current anxiety."
         );
 
-        const nRuleOutBipolar = await createNode(
-            "I don't have those super-high, wired phases people talk about. This is more like being constantly revved up and exhausted at the same time. No risky shopping sprees or anything.",
-            X5,
-            4 * Y_STEP
+        // 4) ADHD-LEANING MISDIAGNOSIS PATH
+        const nADHDLabel = await builder.addDialogue(
+            7,
+            4,
+            "ADHD… huh. I always thought I just wasn’t disciplined enough. I guess that would explain why I feel so scattered at work."
         );
 
-        // From Timeline
-        await linkNode(
-            nTimeline,
-            nRuleOutDepression,
-            "You’ve mentioned being a worrier more than feeling sad. Do you ever feel hopeless or lose interest in things you usually enjoy?",
-            0
-        );
-        await linkNode(
-            nTimeline,
-            nRuleOutBipolar,
-            "Have there been times where your mood shoots way up—needing very little sleep, feeling invincible, or taking big risks out of character?",
-            1
-        );
-        await linkNode(
-            nTimeline,
-            nRuleOutOCD,
-            "You’ve described a lot of checking and re-checking. Do you ever feel driven to do specific rituals or routines to neutralize certain thoughts?",
-            2
+        await builder.connect(
+            nChecklistFocusADHDPath,
+            nADHDLabel,
+            "Given your difficulties with focus and organization, especially under pressure, this could be consistent with an ADHD picture."
         );
 
-        // From Panic
-        await linkNode(
-            nPanic,
-            nRuleOutPanic,
-            "That bathroom incident sounds like a spike in anxiety. Do you tend to get sudden attacks 'out of the blue', or is it more like a steady hum that rises in certain situations?",
-            0
-        );
-        await linkNode(
-            nPanic,
-            nRuleOutDepression,
-            "After moments like that, do you feel more down and hopeless, or mostly keyed up and afraid it will happen again?",
-            1
-        );
-        await linkNode(
-            nPanic,
-            nRuleOutOCD,
-            "When you left that meeting, was it because of a specific intrusive thought you had to neutralize, or more a general fear of something going wrong?",
-            2
+        const endADHD = await builder.addEnd(
+            8,
+            4,
+            "If we’re going with ADHD, I just hope I don’t get labeled as ‘lazy.’ I’m trying so hard—all while my brain is sprinting."
         );
 
-        // From Risk
-        await linkNode(
-            nRisk,
-            nRuleOutDepression,
-            "It’s important that you’re not thinking of hurting yourself. When things feel that overwhelming, do you feel more empty and numb, or more tense and wound up?",
-            0
-        );
-        await linkNode(
-            nRisk,
-            nRuleOutBipolar,
-            "Sometimes people swing between wanting to quit everything and feeling on top of the world. Have you noticed big mood swings like that?",
-            1
-        );
-        await linkNode(
-            nRisk,
-            nRuleOutPanic,
-            "Those fantasies of escaping—do they come with sudden physical surges of fear, or are they more like ongoing worry about being trapped?",
-            2
+        await builder.connect(
+            nADHDLabel,
+            endADHD,
+            "We can proceed with a working diagnosis of ADHD and explore strategies and possibly medications aimed at attention and executive function."
         );
 
-        // From Values / RelationshipStrain
-        await linkNode(
-            nValues,
-            nRuleOutDepression,
-            "Even under all this stress, you still care about architecture and relationships. Do you feel more anxious than sad overall?",
-            0
-        );
-        await linkNode(
-            nRelationshipStrain,
-            nRuleOutDepression,
-            "Conflict and guilt can definitely drain people. Do you mostly feel down, or more tense and on edge?",
-            1
-        );
-        await linkNode(
-            nRelationshipStrain,
-            nRuleOutPanic,
-            "When arguments happen, does your anxiety show up more as out-of-the-blue panic, or as a buildup that finally spills over?",
-            2
+        // 5) ADJUSTMENT / BURNOUT MISDIAGNOSIS PATH
+        const nAdjustmentLabel = await builder.addDialogue(
+            7,
+            5,
+            "So you think this is just me adjusting badly to a promotion? Part of me hopes you’re right. Part of me worries this is just how my brain is wired."
         );
 
-        // -------------------------
-        // LEVEL 6: ENDINGS / FORMULATION
-        // -------------------------
-        const nEndPsychoeducation = await createNode(
-            "That makes sense. It feels like my alarm system is stuck in the 'on' position. If we can turn the volume down, I think I can handle the job. I want to handle the job.",
-            X6,
-            1.5 * Y_STEP,
-            true
+        await builder.connect(
+            nStress_Coping,
+            nAdjustmentLabel,
+            "Given the clear link to your recent promotion and how you’ve been coping, this might be an adjustment reaction or burnout related to increased demands."
         );
 
-        const nEndSleepFocus = await createNode(
-            "Maybe. I just need to sleep. If you can help with that, I'll try whatever.",
-            X6,
-            2.5 * Y_STEP,
-            true
+        const endAdjustment = await builder.addEnd(
+            8,
+            5,
+            "If this is just ‘adjustment,’ maybe it’ll get better when work calms down… if it ever does."
         );
 
-        const nEndSkillsFocus = await createNode(
-            "If this is anxiety and not me being 'broken', that actually helps. I’d like to learn some tools so I’m not triple-checking every line just to feel okay.",
-            X6,
-            3.5 * Y_STEP,
-            true
+        await builder.connect(
+            nAdjustmentLabel,
+            endAdjustment,
+            "We can treat this as an Adjustment Disorder or burnout and focus on stress management around this specific life transition."
         );
 
-        // From Rule-Out Nodes → Multiple Ending Styles
-        await linkNode(
-            nRuleOutDepression,
-            nEndPsychoeducation,
-            "It sounds like the primary issue isn’t depression, but a chronic, high level of anxiety that’s been amplified by the promotion. We’d call that Generalized Anxiety Disorder—your alarm system stuck on high.",
-            0
-        );
-        await linkNode(
-            nRuleOutDepression,
-            nEndSkillsFocus,
-            "Given that your enjoyment is still there underneath the worry, I’m thinking in terms of Generalized Anxiety Disorder. We can focus on skills to manage the worry rather than seeing you as 'broken'.",
-            1
+        // 6) MEDS-FOCUSED / THIN ASSESSMENT PATH
+        const nQuickMedsPlan = await builder.addDialogue(
+            7,
+            6,
+            "So we don’t really know what to call it, but we’re trying meds. I guess if it quiets my brain, I don’t care what the label is."
         );
 
-        await linkNode(
-            nRuleOutPanic,
-            nEndPsychoeducation,
-            "The way you describe that constant hum of dread with spikes in certain situations fits Generalized Anxiety Disorder more than classic panic disorder. We can work on lowering that background volume.",
-            0
-        );
-        await linkNode(
-            nRuleOutPanic,
-            nEndSleepFocus,
-            "These spikes seem to grow out of a constant base level of stress—consistent with Generalized Anxiety Disorder. A first target could be sleep and physical tension so your system can reset.",
-            1
+        await builder.connect(
+            nMeds_QuickLabel,
+            nQuickMedsPlan,
+            "Given your limited time and current distress, we can start with a medication that broadly targets anxiety and low mood, and refine the diagnosis later."
         );
 
-        await linkNode(
-            nRuleOutOCD,
-            nEndSkillsFocus,
-            "Your checking seems driven by worry about performance, not rigid rituals or fears that something terrible will happen unless you do things 'just right'. That again points to Generalized Anxiety Disorder, not OCD.",
-            0
-        );
-        await linkNode(
-            nRuleOutOCD,
-            nEndPsychoeducation,
-            "Given there aren’t fixed rituals or compulsions, this looks more like anxiety about responsibility than OCD. That fits Generalized Anxiety Disorder, which we can treat with skills and sometimes medication.",
-            1
+        const endThinAssessment = await builder.addEnd(
+            8,
+            6,
+            "I’ll try the medication. Maybe later we can figure out what’s actually going on, if I can keep up with appointments."
         );
 
-        await linkNode(
-            nRuleOutBipolar,
-            nEndPsychoeducation,
-            "The absence of those extreme highs suggests we’re not dealing with bipolar disorder. Instead, this long-standing pattern of worry and physical tension aligns with Generalized Anxiety Disorder.",
-            0
-        );
-        await linkNode(
-            nRuleOutBipolar,
-            nEndSleepFocus,
-            "Since you’re not describing big mood swings, I’m less concerned about bipolar and more about chronic anxiety. Starting with stabilizing sleep and reducing tension often helps people with Generalized Anxiety Disorder.",
-            1
+        await builder.connect(
+            nQuickMedsPlan,
+            endThinAssessment,
+            "We’ll move forward with a general ‘anxiety/depression’ label for now and see how you respond to medication."
         );
 
-        // Safety net: connect a more guarded path directly to an end node
-        await linkNode(
-            nDefensive,
-            nEndSleepFocus,
-            "We can absolutely start by targeting sleep and focus. My working impression is Generalized Anxiety Disorder, and treatment often begins with getting your nervous system a chance to rest.",
-            3
+        // 7) DISENGAGEMENT / DROPOUT PATH (LOW RAPPORT)
+        const nSkeptical = await builder.addDialogue(
+            7,
+            7,
+            "This feels a bit rushed. I’m not sure therapy is for me if we’re just checking boxes and naming disorders."
+        );
+
+        await builder.connect(
+            nKeepSurface,
+            nSkeptical,
+            "I know we don’t have unlimited time, and some of my questions are a bit structured. How is this conversation landing for you so far?"
+        );
+
+        const endDropout = await builder.addEnd(
+            8,
+            7,
+            "I think I’ll just try to push through this on my own for now. Maybe I’ll come back if it gets worse."
+        );
+
+        await builder.connect(
+            nSkeptical,
+            endDropout,
+            "If it doesn’t feel like a good fit right now, we can pause here. You’re always welcome to reach out again if you want to explore this more deeply."
+        );
+
+        // 8) SOMATIC-ONLY / “JUST ANXIOUS BUT UNLABELED” PATH
+        const endSomaticOnly = await builder.addEnd(
+            9,
+            3.5,
+            "So we’re calling it ‘stress’ and ‘tension.’ I guess that fits, even if it feels bigger than that inside my head."
+        );
+
+        await builder.connect(
+            nWarmSomatic_Medical,
+            endSomaticOnly,
+            "Since your medical workup has been clear, we can frame this as stress and tension-related symptoms and focus mainly on physical coping skills for now."
+        );
+
+        // 9) MINIMIZING / INTERNALIZED STIGMA PATH
+        const endMinimize = await builder.addEnd(
+            9,
+            4.5,
+            "Other people probably have it worse. Maybe I’m just dramatic. I’ll try to ‘handle it’ and see how far I get."
+        );
+
+        await builder.connect(
+            nWarmSomatic_Minimize,
+            endMinimize,
+            "If part of you feels unsure this is ‘serious enough,’ we can respect that and keep the focus light—simple stress-management tools and checking in if things worsen."
         );
     }
 

@@ -2,13 +2,33 @@ import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToOne, JoinColum
 import { TherapistChoiceEntity } from "./TherapistChoiceEntity";
 import { ScenarioEntity } from "./ScenarioEntity";
 
+export enum NodeType {
+    ROOT = "root",
+    DIALOGUE = "dialogue",
+    END = "end",
+    LOGIC = "logic",
+    STATE_UPDATE = "state_update",
+    RANDOM = "random",
+    OBSERVATION = "observation"
+}
+
 @Entity({ name: "dialogue_nodes" })
 export class DialogueNodeEntity {
     @PrimaryGeneratedColumn()
     id!: number;
 
-    @Column("text")
+    @Column({
+        type: "enum",
+        enum: NodeType,
+        default: NodeType.DIALOGUE
+    })
+    type!: NodeType;
+
+    @Column("text", { nullable: true })
     botText!: string;
+
+    @Column("simple-json", { nullable: true })
+    metadata!: any; 
 
     @Column({ type: "int", default: 0 })
     uiX!: number;
