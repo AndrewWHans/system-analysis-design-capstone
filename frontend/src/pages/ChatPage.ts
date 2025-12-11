@@ -1,5 +1,6 @@
-import { isLoggedIn, removeToken, isAdmin, authFetch } from "../utils/auth";
+import { isLoggedIn, removeToken, isAdmin, authFetch, getPayload } from "../utils/auth";
 import chatHtml from "./templates/ChatPage.html?raw";
+import TomSelect from "tom-select";
 
 interface Scenario {
     id: number;
@@ -62,18 +63,43 @@ export const setupChatPage = (navigate: (path: string) => void) => {
     adminNav.addEventListener('click', () => navigate('/admin'));
   }
 
+  // Sidebar logic
   document.getElementById('nav-home')?.addEventListener('click', () => navigate('/'));
+  document.getElementById('nav-logo')?.addEventListener('click', () => navigate('/')); // Added logo click
   document.getElementById('nav-new-chat')?.addEventListener('click', () => switchMode('selection'));
   document.getElementById('btn-restart')?.addEventListener('click', () => switchMode('selection'));
 
+  // Header auth/profile logic
   const authContainer = document.getElementById("auth-buttons-container");
   if (authContainer && isLoggedIn()) {
-    authContainer.innerHTML = `<button id="btn-logout-nav" class="text-sm text-red-500 hover:text-red-700 font-medium">Logout</button>`;
+    const user = getPayload();
+    const username = user?.username || 'User';
+    const initial = username[0].toUpperCase();
+
+    // Render avatar + logout
+    authContainer.innerHTML = `
+        <div class="flex items-center gap-3">
+            <div id="btn-profile-header" class="flex items-center gap-2 cursor-pointer hover:opacity-80 transition group">
+                <div class="w-8 h-8 bg-[#5B3E86] rounded-full flex items-center justify-center text-white font-bold text-xs shadow-sm group-hover:shadow-md transition">
+                    ${initial}
+                </div>
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-200 hidden md:block group-hover:text-[#5B3E86] transition">${username}</span>
+            </div>
+            <div class="h-4 w-px bg-gray-300 dark:bg-gray-700 mx-1"></div>
+            <button id="btn-logout-nav" class="text-sm text-red-500 hover:text-red-700 cursor-pointer font-medium">Logout</button>
+        </div>
+    `;
+    
+    document.getElementById('btn-profile-header')?.addEventListener('click', () => navigate('/profile'));
     document.getElementById('btn-logout-nav')?.addEventListener('click', () => {
         removeToken();
         navigate('/'); 
     });
   }
+
+  // New profile link listener (Sidebar)
+  document.getElementById('btn-view-profile')?.addEventListener('click', () => navigate('/profile'));
+
 
   // --- Helpers ---
   const formatDate = (isoString: string) => {
@@ -95,6 +121,8 @@ export const setupChatPage = (navigate: (path: string) => void) => {
         scenarioSelector.classList.remove('hidden');
         chatInterface.classList.add('hidden');
         sessionTitle.textContent = "Select a Scenario";
+        // Clear param from URL if switching back to selection manually
+        window.history.replaceState({}, "", "/chat");
         loadScenarios();
         loadHistory();
         currentSessionId = null;
@@ -244,7 +272,6 @@ export const setupChatPage = (navigate: (path: string) => void) => {
           if(!res.ok) throw new Error("Failed to submit");
           const result = await res.json();
           
-          // Re-render session with new state (should show result now)
           renderSession(result.session);
           loadHistory();
 
@@ -267,7 +294,7 @@ export const setupChatPage = (navigate: (path: string) => void) => {
         <span class="font-bold">${session.scenario?.name || ''}</span>
     `;
     
-    // 1. Render Messages
+    // Render messages
     messagesContainer.innerHTML = session.messages.map(msg => {
         const isBot = msg.sender === 'BOT';
         const alignClass = isBot ? 'justify-start' : 'justify-end';
@@ -291,10 +318,10 @@ export const setupChatPage = (navigate: (path: string) => void) => {
 
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
-    // 2. Render Choices or Diagnosis Screen
+    // Render choices or diagnosis screen
     choicesContainer.innerHTML = '';
     
-    // Case 1: Active Chat (Show Choices)
+    // Active chat (show choices)
     if (!session.endTime && !session.isEndNode) {
         choicesContainer.classList.remove('hidden');
         endSessionMsg.classList.add('hidden');
@@ -313,24 +340,35 @@ export const setupChatPage = (navigate: (path: string) => void) => {
         return;
     }
 
-    // Case 2: Session Ended, Check Diagnosis status
+    // Session ended, check diagnosis status
     choicesContainer.classList.add('hidden');
     endSessionMsg.classList.remove('hidden');
 
     const diagSection = endSessionMsg;
     
     if (session.finalDiagnosis) {
-        // Diagnosis Submitted: Show Result
+        // Diagnosis submitted: show result
         const isCorrect = session.isDiagnosisCorrect;
-        const color = isCorrect ? 'text-green-600 bg-green-50 border-green-200' : 'text-red-600 bg-red-50 border-red-200';
+
+        const containerClasses = isCorrect 
+            ? 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800' 
+            : 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800';
+            
+        const titleClass = isCorrect 
+            ? 'text-green-700 dark:text-green-400' 
+            : 'text-red-700 dark:text-red-400';
+            
+        const textClass = isCorrect 
+            ? 'text-green-600 dark:text-green-300' 
+            : 'text-red-600 dark:text-red-300';
         
         diagSection.innerHTML = `
-            <div class="max-w-md mx-auto p-6 rounded-lg border ${color} mb-6">
-                <h3 class="text-xl font-bold mb-2 ${isCorrect ? 'text-green-700' : 'text-red-700'}">
+            <div class="max-w-md mx-auto p-6 rounded-lg border ${containerClasses} mb-6">
+                <h3 class="text-xl font-bold mb-2 ${titleClass}">
                     ${isCorrect ? 'Correct Diagnosis' : 'Incorrect Diagnosis'}
                 </h3>
                 <p class="text-gray-700 dark:text-gray-300 mb-1">You diagnosed: <strong>${session.finalDiagnosis.condition?.name}</strong></p>
-                <p class="text-sm ${isCorrect ? 'text-green-600' : 'text-red-600'}">
+                <p class="text-sm ${textClass}">
                     ${isCorrect ? 'Great job! You identified the condition correctly.' : 'Review the symptoms and try again.'}
                 </p>
             </div>
@@ -339,21 +377,31 @@ export const setupChatPage = (navigate: (path: string) => void) => {
         document.getElementById('btn-restart-final')?.addEventListener('click', () => switchMode('selection'));
 
     } else {
-        // Needs Diagnosis
+        // Needs diagnosis
         const optionsHtml = availableDiagnoses.map(d => `<option value="${d.id}">${d.condition.name}</option>`).join('');
         
         diagSection.innerHTML = `
             <div class="max-w-md mx-auto bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-                <h3 class="text-lg font-bold mb-4 text-gray-900 dark:text-white">Session Concluded. What is client's diagnosis?</h3>
+                <h3 class="text-lg font-bold mb-4 text-gray-900 dark:text-white">Session Concluded. What is your diagnosis?</h3>
                 <div class="mb-4">
-                    <select id="diagnosis-select" class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-[#5B3E86]">
-                        <option value="" disabled selected>Select a condition...</option>
+                    <select id="diagnosis-select" class="w-full" placeholder="Select a condition...">
+                        <option value="">Select a condition...</option>
                         ${optionsHtml}
                     </select>
                 </div>
                 <button id="btn-submit-diag" class="w-full bg-[#5B3E86] text-white py-3 rounded-lg font-medium hover:bg-[#4a326c] transition">Submit Diagnosis</button>
             </div>
         `;
+
+        // Initialize TomSelect for searchable dropdown
+        new TomSelect('#diagnosis-select', {
+            create: false,
+            maxItems: 1,
+            sortField: [{
+                field: "text",
+                direction: "asc"
+            }]
+        });
 
         document.getElementById('btn-submit-diag')?.addEventListener('click', () => {
             const select = document.getElementById('diagnosis-select') as HTMLSelectElement;
@@ -363,8 +411,20 @@ export const setupChatPage = (navigate: (path: string) => void) => {
     }
   };
 
-  // Initial Load
+  // Initial load
   loadScenarios();
   loadHistory();
   loadDiagnoses();
+
+  // Check for deep link via query parameters (e.g. ?sessionId=5)
+  const params = new URLSearchParams(window.location.search);
+  const deepLinkSessionId = params.get('sessionId');
+  if (deepLinkSessionId) {
+      const id = Number(deepLinkSessionId);
+      if(!isNaN(id)) {
+          currentSessionId = id;
+          switchMode('chat');
+          loadSession(id);
+      }
+  }
 };

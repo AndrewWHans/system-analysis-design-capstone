@@ -50,10 +50,12 @@ const conditionRepo = new BaseRepository(ConditionEntity, "Condition", ["symptom
 // Initialize Services
 const simulationService = new SimulationService();
 const seederService = new SeederService(triggerRepo, moodRepo, copingRepo, symptomRepo, conditionRepo, diagnosisRepo);
+const therapistService = new TherapistService(therapistRepo);
+const sessionService = new TherapySessionService(sessionRepo, nodeRepo, messageRepo, choiceRepo, scenarioRepo, simulationService);
 
 export const services = {
-    therapist: new TherapistService(therapistRepo),
-    session: new TherapySessionService(sessionRepo, nodeRepo, messageRepo, choiceRepo, scenarioRepo, simulationService),
+    therapist: therapistService,
+    session: sessionService,
     scenario: new ScenarioService(scenarioRepo, nodeRepo, choiceRepo),
     symptom: new SymptomService(symptomRepo),
     coping: new BaseService(copingRepo, "Coping Mechanism"),

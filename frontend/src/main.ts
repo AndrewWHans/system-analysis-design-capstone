@@ -4,6 +4,7 @@ import { renderLoginPage, setupLoginPage } from './pages/LoginPage';
 import { renderChatPage, setupChatPage } from './pages/ChatPage';
 import { renderHomePage, setupHomePage } from './pages/HomePage';
 import { renderAdminPage, setupAdminPage } from './pages/AdminPage';
+import { renderProfilePage, setupProfilePage } from './pages/ProfilePage';
 import { initTheme } from './utils/theme';
 import { isAdmin, isLoggedIn } from './utils/auth';
 
@@ -13,33 +14,42 @@ const app = document.querySelector<HTMLDivElement>('#app')!;
 initTheme(); 
 
 const navigate = (path: string) => {
+  // Push state so URL updates with query params
   window.history.pushState({}, "", path);
   app.innerHTML = '';
 
-  // Protected Routes Guard
-  if ((path === '/chat' || path === '/admin') && !isLoggedIn()) {
+  // Extract pure pathname for routing logic (ignoring query strings like ?sessionId=1)
+  const tempUrl = new URL(path, window.location.origin);
+  const pathname = tempUrl.pathname;
+
+  // Protected routes
+  if ((pathname === '/chat' || pathname === '/admin' || pathname === '/profile') && !isLoggedIn()) {
     // Redirect to login if token is missing or expired
     navigate('/login');
     return;
   }
 
-  if (path === '/' || path === '/home') {
+  if (pathname === '/' || pathname === '/home') {
     app.innerHTML = renderHomePage();
     setupHomePage(navigate);
   }
-  else if (path === '/register') {
+  else if (pathname === '/register') {
     app.innerHTML = renderRegisterPage();
     setupRegisterPage(navigate);
   } 
-  else if (path === '/login') {
+  else if (pathname === '/login') {
     app.innerHTML = renderLoginPage();
     setupLoginPage(navigate);
   }
-  else if (path === '/chat') {
+  else if (pathname === '/chat') {
     app.innerHTML = renderChatPage();
     setupChatPage(navigate);
   }
-  else if (path === '/admin') {
+  else if (pathname === '/profile') {
+    app.innerHTML = renderProfilePage();
+    setupProfilePage(navigate);
+  }
+  else if (pathname === '/admin') {
     if(!isAdmin()) {
         navigate('/');
         return;
@@ -53,7 +63,8 @@ const navigate = (path: string) => {
 };
 
 window.onpopstate = () => {
-  navigate(window.location.pathname);
+  // Pass the full path including search/query string
+  navigate(window.location.pathname + window.location.search);
 };
 
 // Listen for forced logout events (triggered by authFetch on 401)
@@ -61,5 +72,6 @@ window.addEventListener('auth-logout', () => {
   navigate('/login');
 });
 
-const initialPath = window.location.pathname === '/' ? '/' : window.location.pathname;
+// Handle initial load with query strings
+const initialPath = window.location.pathname === '/' ? '/' : (window.location.pathname + window.location.search);
 navigate(initialPath);

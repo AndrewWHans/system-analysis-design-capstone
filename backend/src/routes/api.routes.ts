@@ -10,7 +10,7 @@ import { BaseController } from "../controller/BaseController";
 const router = Router();
 
 // Initialize controllers
-const authController = new AuthController(services.therapist);
+const authController = new AuthController(services.therapist, services.session);
 const sessionController = new SessionController(services.session);
 
 // Generic controllers for read-only access
@@ -27,6 +27,7 @@ const nodeCtrl = new BaseController(services.dialogueNode);
 // Auth
 router.post("/register", catchAsync(authController.register));
 router.post("/login", catchAsync(authController.login));
+router.get("/me", authenticateToken, catchAsync(authController.getProfile));
 
 // Session
 router.get("/sessions", authenticateToken, catchAsync(sessionController.getHistory));

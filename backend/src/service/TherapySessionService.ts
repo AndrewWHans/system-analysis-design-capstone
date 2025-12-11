@@ -161,6 +161,29 @@ export class TherapySessionService {
         return await this.therapySessionRepository.findByTherapistID(therapistID);
     }
 
+    async getTherapistStats(therapistID: number) {
+        const sessions = await this.therapySessionRepository.findByTherapistID(therapistID);
+        
+        const totalStarted = sessions.length;
+        const totalCompleted = sessions.filter(s => s.endTime).length;
+        const totalDiagnoses = sessions.filter(s => s.finalDiagnosis).length;
+        const correctDiagnoses = sessions.filter(s => s.isDiagnosisCorrect === true).length;
+        
+        // Calculate accuracy only based on sessions where a diagnosis was actually submitted
+        const accuracy = totalDiagnoses > 0 
+            ? Math.round((correctDiagnoses / totalDiagnoses) * 100) 
+            : 0;
+
+        return {
+            totalStarted,
+            totalCompleted,
+            totalDiagnoses,
+            correctDiagnoses,
+            accuracy,
+            recentSessions: sessions.slice(0, 5) // Last 5 sessions
+        };
+    }
+
     private async logMessage(session: TherapySessionEntity, sender: SenderType, content: string) {
         const msg = this.messageRepository.create({
             therapySession: session,

@@ -2,30 +2,35 @@
     <!-- Sidebar -->
     <aside class="w-64 bg-gray-50 dark:bg-gray-900 h-screen border-r border-gray-200 dark:border-gray-800 flex flex-col p-6 hidden md:flex font-sans z-10">
         <div class="flex justify-between items-start mb-10">
-            <div class="text-xl font-bold flex items-center gap-2 text-black dark:text-white">
-                <div class="w-8 h-8 bg-black dark:bg-white rounded-lg flex items-center justify-center text-white dark:text-black">
+            <div class="flex-shrink-0 flex items-center gap-2 cursor-pointer group" id="nav-logo">
+                <div class="w-8 h-8 bg-black dark:bg-white rounded-lg flex items-center justify-center text-white dark:text-black group-hover:scale-105 transition">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
                 </div>
-                Therabot
+                <span class="font-bold text-xl tracking-tight text-gray-900 dark:text-white">Therabot</span>
             </div>
         </div>
         
         <nav class="space-y-2 mb-10">
-            <button id="nav-new-chat" class="w-full text-left px-4 py-2 rounded-lg bg-[#5B3E86] text-white font-medium hover:bg-[#4a326c] transition shadow-md flex items-center gap-2">
+            <button id="nav-new-chat" class="w-full text-left px-4 py-2 rounded-lg bg-[#5B3E86] text-white font-medium hover:bg-[#4a326c] cursor-pointer transition shadow-md flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                 New Session
             </button>
-            <button id="nav-home" class="w-full text-left px-4 py-2 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800 transition">
+            <button id="nav-home" class="w-full text-left px-4 py-2 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800 cursor-pointer transition">
                 Back to Home
             </button>
-            <button id="nav-admin" class="hidden w-full text-left px-4 py-2 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-gray-800 transition">
+            <button id="nav-admin" class="hidden w-full text-left px-4 py-2 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-gray-800 cursor-pointer transition">
                 Admin Panel
             </button>
         </nav>
 
         <!-- History Section -->
         <div class="flex-1 overflow-y-auto mb-6">
-            <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Previous Sessions</h3>
+            <div id="btn-view-profile" class="flex items-center justify-between mb-4 group cursor-pointer" title="View Full History in Profile">
+                <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider group-hover:text-[#5B3E86] dark:group-hover:text-[#a78bfa] transition">Previous Sessions</h3>
+                <svg class="w-4 h-4 text-gray-400 group-hover:text-[#5B3E86] dark:group-hover:text-[#a78bfa] transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                </svg>
+            </div>
             <div id="session-history-list" class="space-y-1">
                 <!-- History Items Injected Here -->
                 <div class="text-sm text-gray-400 pl-2">Loading history...</div>
