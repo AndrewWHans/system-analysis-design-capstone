@@ -1,6 +1,6 @@
 import { TherapistEntity } from "../entity/TherapistEntity";
 import { TherapistRepository } from "../repository/TherapistRepository";
-import { BadRequestError, UnauthorizedError } from "../utils/AppError"; 
+import { BadRequestError, UnauthorizedError, ConflictError } from "../utils/AppError"; 
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
@@ -24,21 +24,23 @@ export class TherapistService {
             throw new BadRequestError("At least one of Username or Email is required");
         }
 
+        // Check for existing Username
         if (u) {
             try {
                 await this.therapistRepository.findByUsername(u);
-                throw new Error("Username already taken");
+                throw new ConflictError("Username already taken");
             } catch (err: any) {
-                if (err.message === "Username already taken") throw err;
+                if (err instanceof ConflictError) throw err;
             }
         }
 
+        // Check for existing Email
         if (e) {
             try {
                 await this.therapistRepository.findByEmail(e);
-                throw new Error("Email already taken");
+                throw new ConflictError("Email already taken");
             } catch (err: any) {
-                if (err.message === "Email already taken") throw err;
+                if (err instanceof ConflictError) throw err;
             }
         }
 

@@ -28,3 +28,10 @@ export class UnauthorizedError extends AppError {
         super(message, 401);
     }
 }
+
+// 409 Conflict (duplicate entries)
+export class ConflictError extends AppError {
+    constructor(message: string = "Resource already exists") {
+        super(message, 409);
+    }
+}

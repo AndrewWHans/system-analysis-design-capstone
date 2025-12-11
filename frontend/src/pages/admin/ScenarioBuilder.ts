@@ -132,12 +132,6 @@ export class ScenarioBuilder {
             
             // If more than 1 connection exists on this output, remove the older ones
             if (connections.length > 1) {
-                // Connections array usually pushes new ones to the end. 
-                // We remove the one that isn't the new target input_id
-                // But Drawflow structure is { node: input_id, output: input_class }
-                
-                // Find the connection that matches the NEW connection (so we keep it)
-                // Filter out everything else
                 const others = connections.filter((conn: any) => 
                     !(conn.node == input_id && conn.output == input_class)
                 );
@@ -172,14 +166,18 @@ export class ScenarioBuilder {
 
                 if (!choiceList) return;
 
-                n.choices.forEach((choice: any, index: number) => {
+                n.choices.forEach((choice: any) => {
                     const targetDfId = dbIdToDrawflowId.get(choice.targetNodeId);
                     
+                    // FIXED: Let Drawflow generate output, then read the key it made
                     this.editor.addNodeOutput(sourceDfId);
-                    const outputName = `output_${index + 1}`;
+                    
+                    const nodeObj = this.editor.getNodeFromId(sourceDfId);
+                    const keys = Object.keys(nodeObj.outputs);
+                    const outputName = keys[keys.length - 1]; // The most recently added key
 
                     const row = document.createElement('div');
-                    row.className = "flex items-center h-[38px] gap-1 mb-1"; 
+                    row.className = "flex items-center h-[38px] gap-1 mb-0"; 
                     row.innerHTML = `
                         <input type="text" class="flex-1 min-w-0 text-xs px-3 py-2 h-full border border-gray-200 dark:border-gray-700 rounded-lg dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-[#5B3E86] transition shadow-sm" value="${choice.text}" data-output="${outputName}">
                         <button class="remove-choice-btn w-[30px] h-[30px] flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition" title="Remove Choice">
@@ -209,15 +207,82 @@ export class ScenarioBuilder {
     }
 
     private removeChoice(nodeId: number, outputName: string, row: HTMLElement) {
-        // 1. Remove the connection/output from Drawflow
-        this.editor.removeNodeOutput(nodeId, outputName);
+        const node = this.editor.getNodeFromId(nodeId);
         
-        // 2. Remove the UI row
+        // Node must exist before removing a choice
+        if (!node) {
+            row.remove();
+            return;
+        }
+
+        const outputs = node.outputs;
+        
+        // If the output doesn't exist in Drawflow (desync), just remove DOM row
+        if (!outputs || !outputs[outputName]) {
+            row.remove();
+            return;
+        }
+
+        const keys = Object.keys(outputs);
+        const lastKey = keys[keys.length - 1];
+
+        // Case 1: Deleting the last one. Simple removal.
+        if (outputName === lastKey) {
+            this.editor.removeNodeOutput(nodeId, outputName);
+            row.remove();
+            return;
+        }
+
+        // Case 2: Deleting from middle.
+        
+        // 1. Clear connections on thetarget (deleted) port
+        const targetConnections = outputs[outputName].connections;
+        if(targetConnections) {
+            [...targetConnections].forEach((conn: any) => {
+                 this.editor.removeSingleConnection(nodeId, conn.node, outputName, conn.output);
+            });
+        }
+
+        // 2. Move connections from last port to target port
+        const lastConnections = outputs[lastKey].connections;
+        if(lastConnections) {
+            [...lastConnections].forEach((conn: any) => {
+                 this.editor.addConnection(nodeId, conn.node, outputName, conn.output);
+                 this.editor.removeSingleConnection(nodeId, conn.node, lastKey, conn.output);
+            });
+        }
+
+        // Update the UI row of the "last" item to point to the "target" (reused) slot
+        const nodeEl = document.getElementById(`node-${nodeId}`);
+        const lastRowInput = nodeEl?.querySelector(`input[data-output="${lastKey}"]`);
+        
+        if (lastRowInput) {
+             lastRowInput.setAttribute('data-output', outputName);
+        } else {
+             this.editor.removeNodeOutput(nodeId, outputName);
+             row.remove();
+             return;
+        }
+
+        // 4. Remove the *deleted* row (the one clicked)
         row.remove();
 
-        // Note: We do NOT shift subsequent output keys (e.g., output_3 -> output_2)
-        // because Drawflow relies on unique keys. 'saveGraph' iterates DOM elements
-        // and reads their data-output attribute, which remains valid.
+        // 5. Remove the *last* output slot from Drawflow
+        this.editor.removeNodeOutput(nodeId, lastKey);
+        
+        // Update the 'remove' button on the moved row to point to the new ID.
+        if (lastRowInput) {
+            const container = lastRowInput.parentElement!;
+            const btn = container.querySelector('.remove-choice-btn')!;
+            
+            // Clone and replace to strip old listener
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode?.replaceChild(newBtn, btn);
+            
+            newBtn.addEventListener('click', () => {
+                this.removeChoice(nodeId, outputName, container as HTMLElement);
+            });
+        }
     }
 
     private setupCustomPanning(container: HTMLElement) {
@@ -300,7 +365,6 @@ export class ScenarioBuilder {
             icon = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0zM9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"></path></svg>`;
         }
 
-        // Updated header HTML to use spans and flex-shrink to prevent overlap
         const html = `
             <div class="node-wrapper node-content rounded-2xl ${wrapperClass} w-80 transition-all duration-200 overflow-hidden" data-type="${type}">
                 <div class="p-3 ${headerClass} flex justify-between items-center select-none">
@@ -343,14 +407,14 @@ export class ScenarioBuilder {
 
             if (choiceBtn && choiceList) {
                 choiceBtn.addEventListener('click', () => {
-                    const existingOutputs = this.editor.getNodeFromId(nodeId).outputs;
-                    const nextIndex = Object.keys(existingOutputs).length + 1;
-                    const outputName = `output_${nextIndex}`;
-                    
                     this.editor.addNodeOutput(nodeId);
                     
+                    const nodeObj = this.editor.getNodeFromId(nodeId);
+                    const keys = Object.keys(nodeObj.outputs);
+                    const outputName = keys[keys.length - 1];
+                    
                     const row = document.createElement('div');
-                    row.className = "flex items-center h-[38px] gap-1 animate-fade-in-up mb-1"; 
+                    row.className = "flex items-center h-[38px] gap-1 animate-fade-in-up mb-0"; 
                     row.innerHTML = `
                         <input type="text" class="flex-1 min-w-0 text-xs px-3 py-2 h-full border border-gray-200 dark:border-gray-700 rounded-lg dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-[#5B3E86] transition shadow-sm" placeholder="Therapist choice..." data-output="${outputName}">
                         <button class="remove-choice-btn w-[30px] h-[30px] flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition" title="Remove Choice">

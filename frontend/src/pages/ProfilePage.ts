@@ -11,7 +11,8 @@ export const setupProfilePage = (navigate: (path: string) => void) => {
     // Navigation logic
     document.getElementById('nav-logo')?.addEventListener('click', () => navigate('/'));
     document.getElementById('nav-chat')?.addEventListener('click', () => navigate('/chat'));
-    document.getElementById('btn-logout')?.addEventListener('click', () => {
+    
+    document.getElementById('btn-logout-nav')?.addEventListener('click', () => {
         removeToken();
         navigate('/');
     });
