@@ -29,7 +29,11 @@ router.post("/register", catchAsync(authController.register));
 router.post("/login", catchAsync(authController.login));
 
 // Session
-router.post("/sessions", catchAsync(sessionController.startSession));
+router.get("/sessions", authenticateToken, catchAsync(sessionController.getHistory));
+router.post("/sessions", authenticateToken, catchAsync(sessionController.startSession));
+router.get("/sessions/:id", authenticateToken, catchAsync(sessionController.getSession));
+router.post("/sessions/:id/choice", authenticateToken, catchAsync(sessionController.submitChoice));
+router.post("/sessions/:id/diagnosis", authenticateToken, catchAsync(sessionController.submitDiagnosis));
 
 // Public read-only resources
 router.get("/coping-mechanisms", catchAsync(copingCtrl.getAll));

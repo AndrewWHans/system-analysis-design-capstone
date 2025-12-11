@@ -8,7 +8,8 @@ import { ScenarioEntity } from "../entity/ScenarioEntity";
 import { DiagnosisEntity } from "../entity/DiagnosisEntity";
 import { SimulationService } from "./SimulationService";
 import { SenderType } from "../utils/enums";
-import { BadRequestError } from "../utils/AppError";
+import { BadRequestError, NotFoundError } from "../utils/AppError";
+import { AppDataSource } from "../data-source";
 
 export class TherapySessionService {
     constructor(
@@ -20,8 +21,16 @@ export class TherapySessionService {
         private simulationService: SimulationService
     ) {}
 
-    async startSession(therapistID: number, scenarioID: number): Promise<TherapySessionEntity> {
-        const scenario = await this.scenarioRepository.findByID(scenarioID);
+    async startSession(therapistID: number, scenarioID: number): Promise<any> {
+        const scenario = await this.scenarioRepository.repo.findOne({
+            where: { id: scenarioID },
+            relations: ["rootDialogueNode"]
+        });
+        
+        if (!scenario || !scenario.rootDialogueNode) {
+            throw new NotFoundError("Scenario or Root Node not found");
+        }
+
         const rootNode = await this.dialogueNodeRepository.findByID(scenario.rootDialogueNode.id);
 
         const session = this.therapySessionRepository.create({
@@ -35,64 +44,123 @@ export class TherapySessionService {
         const savedSession = await this.therapySessionRepository.save(session);
         await this.logMessage(savedSession, SenderType.BOT, rootNode.botText);
 
-        return savedSession;
+        return await this.getSessionDetails(savedSession.id);
     }
 
-    async processTherapistChoice(sessionID: number, choiceID: number): Promise<TherapySessionEntity> {
+    async processTherapistChoice(sessionID: number, choiceID: number): Promise<any> {
         const session = await this.therapySessionRepository.findByID(sessionID);
         if (!session.currentDialogueNodeID) throw new BadRequestError("Session has no current dialogue node");
         
-        // Get Data
-        const choice = await this.therapistChoiceRepository.findByID(choiceID);
-        // Ensure we have the full next node
-        const fullChoice = await this.therapistChoiceRepository.repo.findOne({
+        // Get data
+        const choice = await this.therapistChoiceRepository.repo.findOne({
             where: { id: choiceID },
             relations: ["nextNode"]
         });
         
-        if (!fullChoice || !fullChoice.nextNode) throw new BadRequestError("Invalid choice or missing next node");
+        if (!choice || !choice.nextNode) throw new BadRequestError("Invalid choice or missing next node");
 
-        // Log Therapist Action
+        // Log therapist action
         await this.logMessage(session, SenderType.THERAPIST, choice.text);
 
-        // Delegate Logic to SimulationService (SRP)
-        const result = this.simulationService.getNextState(fullChoice);
+        // Get next scenario node
+        const result = this.simulationService.getNextState(choice);
 
-        // Update Session State
+        // Update session state
         session.currentDialogueNodeID = result.nextNode.id;
-        await this.logMessage(session, SenderType.BOT, result.botResponse);
-
-        return await this.therapySessionRepository.save(session);
-    }
-
-    async submitDiagnosis(sessionID: number, diagnosis: DiagnosisEntity): Promise<TherapySessionEntity> {
-        const session = await this.therapySessionRepository.findByID(sessionID);
-        const scenario = await this.scenarioRepository.findByID(session.scenarioID);
-
-        // Delegate Logic to SimulationService (SRP)
-        const result = this.simulationService.evaluateDiagnosis(scenario, diagnosis);
-
-        // Update Session State
-        session.finalDiagnosis = diagnosis;
-        session.endTime = new Date().toISOString();
-
-        // Log Result
-        await this.logMessage(session, SenderType.BOT, result.feedback);
-
-        return await this.therapySessionRepository.save(session);
-    }
-
-    async getSessionDetails(sessionID: number): Promise<TherapySessionEntity> {
-        const session = await this.therapySessionRepository.findByID(sessionID);
-        const allMessages = await this.messageRepository.findAll();
         
-        session.messages = allMessages.filter(
-            (m) => m.therapySession.id === sessionID
-        );
-        return session;
+        if (result.botResponse) {
+            await this.logMessage(session, SenderType.BOT, result.botResponse);
+        }
+
+        // Check if next node is an end node
+        const nextNodeFull = await this.dialogueNodeRepository.findByID(result.nextNode.id);
+        if(nextNodeFull.isEndNode) {
+            session.endTime = new Date().toISOString(); 
+        }
+
+        await this.therapySessionRepository.save(session);
+        return await this.getSessionDetails(sessionID);
     }
 
-    // Helper
+    async submitDiagnosis(sessionID: number, diagnosisID: number): Promise<any> {
+        const session = await this.therapySessionRepository.repo.findOne({
+            where: { id: sessionID },
+            relations: ["scenario", "scenario.correctDiagnosis", "scenario.correctDiagnosis.condition"]
+        });
+
+        if (!session) throw new NotFoundError("Session not found");
+        if (!session.endTime) throw new BadRequestError("Cannot submit diagnosis before session ends");
+
+        const diagnosisRepo = AppDataSource.getRepository(DiagnosisEntity);
+        const submittedDiagnosis = await diagnosisRepo.findOne({
+            where: { id: diagnosisID },
+            relations: ["condition"]
+        });
+
+        if (!submittedDiagnosis) throw new NotFoundError("Diagnosis not found");
+
+        // Evaluate
+        const evaluation = this.simulationService.evaluateDiagnosis(session.scenario, submittedDiagnosis);
+
+        // Update Session
+        session.finalDiagnosis = submittedDiagnosis;
+        session.isDiagnosisCorrect = evaluation.isCorrect;
+        
+        await this.therapySessionRepository.save(session);
+
+        return {
+            ...evaluation,
+            session: await this.getSessionDetails(sessionID)
+        };
+    }
+
+    async getSessionDetails(sessionID: number): Promise<any> {
+        const session = await this.therapySessionRepository.repo.findOne({
+            where: { id: sessionID },
+            relations: ["scenario", "finalDiagnosis", "finalDiagnosis.condition"] 
+        });
+
+        if(!session) throw new NotFoundError("Session not found");
+
+        const allMessages = await this.messageRepository.repo.find({
+            where: { therapySession: { id: sessionID } },
+            order: { timestamp: "ASC", id: "ASC" }
+        });
+        
+        session.messages = allMessages;
+
+        let availableChoices: TherapistChoiceEntity[] = [];
+        let isEndNode = false;
+
+        // If session is ended, don't return choices
+        if (session.currentDialogueNodeID && !session.endTime) {
+            const currentNode = await this.dialogueNodeRepository.repo.findOne({
+                where: { id: session.currentDialogueNodeID },
+                relations: ["therapistChoices", "therapistChoices.nextNode"]
+            });
+            
+            if (currentNode) {
+                availableChoices = currentNode.therapistChoices;
+                isEndNode = currentNode.isEndNode;
+            }
+        } else {
+            isEndNode = true; // Treated as end node if session is closed
+        }
+
+        return {
+            ...session,
+            isEndNode,
+            availableChoices: availableChoices.map(c => ({
+                id: c.id,
+                text: c.text
+            }))
+        };
+    }
+
+    async getSessionHistory(therapistID: number): Promise<TherapySessionEntity[]> {
+        return await this.therapySessionRepository.findByTherapistID(therapistID);
+    }
+
     private async logMessage(session: TherapySessionEntity, sender: SenderType, content: string) {
         const msg = this.messageRepository.create({
             therapySession: session,
