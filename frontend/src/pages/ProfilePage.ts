@@ -39,13 +39,13 @@ export const setupProfilePage = (navigate: (path: string) => void) => {
                     if (s.isDiagnosisCorrect) {
                         diagStatus = `
                             <div class="flex items-center justify-end gap-2">
-                                <span class="text-gray-600 dark:text-gray-400 text-sm">${s.finalDiagnosis.condition?.name}</span>
+                                <span class="text-gray-600 dark:text-gray-400 text-sm">${s.finalDiagnosis.name}</span>
                                 <span class="inline-flex items-center rounded-full bg-green-100 dark:bg-green-900/30 px-2.5 py-0.5 text-xs font-medium text-green-700 dark:text-green-400">Correct</span>
                             </div>`;
                     } else {
                         diagStatus = `
                             <div class="flex items-center justify-end gap-2">
-                                <span class="text-gray-600 dark:text-gray-400 text-sm">${s.finalDiagnosis.condition?.name}</span>
+                                <span class="text-gray-600 dark:text-gray-400 text-sm">${s.finalDiagnosis.name}</span>
                                 <span class="inline-flex items-center rounded-full bg-red-100 dark:bg-red-900/30 px-2.5 py-0.5 text-xs font-medium text-red-700 dark:text-red-400">Incorrect</span>
                             </div>`;
                     }
@@ -117,7 +117,7 @@ export const setupProfilePage = (navigate: (path: string) => void) => {
             const filtered = allSessions.filter(s => 
                 (s.scenario?.name || '').toLowerCase().includes(query) || 
                 formatDate(s.startTime).toLowerCase().includes(query) ||
-                (s.finalDiagnosis?.condition?.name || '').toLowerCase().includes(query)
+                (s.finalDiagnosis?.name || '').toLowerCase().includes(query)
             );
             renderTable(filtered);
         });

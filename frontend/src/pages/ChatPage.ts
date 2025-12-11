@@ -29,13 +29,13 @@ interface SessionState {
     isEndNode: boolean;
     startTime: string;
     endTime: string | null;
-    finalDiagnosis?: { id: number; condition: { name: string } } | null;
+    finalDiagnosis?: { id: number; name: string } | null;
     isDiagnosisCorrect?: boolean | null;
 }
 
-interface DiagnosisOption {
+interface ConditionOption {
     id: number;
-    condition: { name: string };
+    name: string;
 }
 
 export const renderChatPage = () => {
@@ -55,7 +55,7 @@ export const setupChatPage = (navigate: (path: string) => void) => {
   const historyList = document.getElementById('session-history-list')!;
   
   let currentSessionId: number | null = null;
-  let availableDiagnoses: DiagnosisOption[] = [];
+  let availableConditions: ConditionOption[] = [];
 
   // --- Setup Navigation ---
   const adminNav = document.getElementById('nav-admin');
@@ -77,7 +77,7 @@ export const setupChatPage = (navigate: (path: string) => void) => {
     const username = user?.username || 'User';
     const initial = username[0].toUpperCase();
 
-    // Render avatar + logout in a cleaner pill style
+    // Render avatar + logout in a pill style
     authContainer.innerHTML = `
         <div class="flex items-center gap-3">
             <div id="btn-profile-header" class="flex items-center gap-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 pr-3 pl-1 py-1 rounded-full transition group border border-transparent hover:border-gray-200 dark:hover:border-gray-700">
@@ -86,7 +86,7 @@ export const setupChatPage = (navigate: (path: string) => void) => {
                 </div>
                 <span class="text-sm font-semibold text-gray-700 dark:text-gray-200 hidden md:block">${username}</span>
             </div>
-            <button id="btn-logout-nav" class="p-2 rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition" title="Logout">
+            <button id="btn-logout-nav" class="p-2 rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer transition" title="Logout">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
             </button>
         </div>
@@ -107,11 +107,11 @@ export const setupChatPage = (navigate: (path: string) => void) => {
       return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   };
 
-  const loadDiagnoses = async () => {
+  const loadConditions = async () => {
       try {
-          const res = await authFetch('http://localhost:3000/diagnoses');
-          if(res.ok) availableDiagnoses = await res.json();
-      } catch(e) { console.error("Failed to load diagnoses", e); }
+          const res = await authFetch('http://localhost:3000/conditions');
+          if(res.ok) availableConditions = await res.json();
+      } catch(e) { console.error("Failed to load conditions", e); }
   };
 
   // --- Core Logic ---
@@ -131,7 +131,7 @@ export const setupChatPage = (navigate: (path: string) => void) => {
     } else {
         scenarioSelector.classList.add('hidden');
         chatInterface.classList.remove('hidden');
-        sessionSubtitle.classList.add('hidden'); // Hide subtitle in chat for cleaner look
+        sessionSubtitle.classList.add('hidden');
     }
   };
 
@@ -226,7 +226,7 @@ export const setupChatPage = (navigate: (path: string) => void) => {
                   currentSessionId = id;
                   switchMode('chat');
                   loadSession(id);
-                  loadHistory(); // Refresh to update active state styling
+                  loadHistory();
               });
           });
 
@@ -266,7 +266,6 @@ export const setupChatPage = (navigate: (path: string) => void) => {
   const submitChoice = async (choiceId: number) => {
     if (!currentSessionId) return;
     
-    // Optimistic UI: disable buttons
     const btns = choicesContainer.querySelectorAll('button');
     btns.forEach(b => { b.disabled = true; b.classList.add('opacity-50'); });
 
@@ -290,7 +289,7 @@ export const setupChatPage = (navigate: (path: string) => void) => {
     }
   };
 
-  const submitDiagnosis = async (diagnosisId: number) => {
+  const submitDiagnosis = async (conditionId: number) => {
       if(!currentSessionId) return;
       const btn = document.getElementById('btn-submit-diag') as HTMLButtonElement;
       if(btn) { btn.disabled = true; btn.textContent = 'Submitting...'; }
@@ -299,7 +298,7 @@ export const setupChatPage = (navigate: (path: string) => void) => {
           const res = await authFetch(`http://localhost:3000/sessions/${currentSessionId}/diagnosis`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ diagnosisId })
+              body: JSON.stringify({ conditionId })
           });
 
           if(!res.ok) throw new Error("Failed to submit");
@@ -322,10 +321,8 @@ export const setupChatPage = (navigate: (path: string) => void) => {
   };
 
   const renderSession = (session: SessionState) => {
-    // Update Header
     sessionTitle.innerHTML = session.scenario?.name || `Session #${session.id}`;
     
-    // Render messages with avatars and nicer styling
     messagesContainer.innerHTML = session.messages.map((msg, index) => {
         const isBot = msg.sender === 'BOT';
         const isLast = index === session.messages.length - 1;
@@ -376,7 +373,6 @@ export const setupChatPage = (navigate: (path: string) => void) => {
         if (session.availableChoices && session.availableChoices.length > 0) {
             session.availableChoices.forEach(choice => {
                 const btn = document.createElement('button');
-                // Updated Pill/Chip style
                 btn.className = "flex-grow min-w-[200px] text-center px-6 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-[#5B3E86] hover:text-white hover:border-[#5B3E86] dark:hover:bg-[#5B3E86] dark:hover:border-[#5B3E86] dark:text-gray-200 transition-all shadow-sm hover:shadow-md font-medium text-sm md:text-base animate-fade-in-up";
                 btn.innerHTML = choice.text;
                 btn.onclick = () => submitChoice(choice.id);
@@ -412,7 +408,7 @@ export const setupChatPage = (navigate: (path: string) => void) => {
                 <h3 class="text-2xl font-bold mb-2 ${isCorrect ? 'text-green-800 dark:text-green-400' : 'text-red-800 dark:text-red-400'}">
                     ${isCorrect ? 'Correct Diagnosis!' : 'Incorrect Diagnosis'}
                 </h3>
-                <p class="text-gray-600 dark:text-gray-300 mb-1 text-lg">You selected: <strong class="font-semibold">${session.finalDiagnosis.condition?.name}</strong></p>
+                <p class="text-gray-600 dark:text-gray-300 mb-1 text-lg">You selected: <strong class="font-semibold">${session.finalDiagnosis.name}</strong></p>
                 <p class="text-sm ${isCorrect ? 'text-green-600 dark:text-green-500' : 'text-red-600 dark:text-red-500'}">
                     ${isCorrect ? 'Excellent clinical reasoning.' : 'Review the patient history and try similar cases.'}
                 </p>
@@ -423,7 +419,7 @@ export const setupChatPage = (navigate: (path: string) => void) => {
 
     } else {
         // Needs diagnosis
-        const optionsHtml = availableDiagnoses.map(d => `<option value="${d.id}">${d.condition.name}</option>`).join('');
+        const optionsHtml = availableConditions.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
         
         diagSection.innerHTML = `
             <div class="max-w-lg mx-auto bg-white dark:bg-gray-800 p-8 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xl">
@@ -462,7 +458,7 @@ export const setupChatPage = (navigate: (path: string) => void) => {
   // Initial load
   loadScenarios();
   loadHistory();
-  loadDiagnoses();
+  loadConditions();
 
   // Check for deep link via query parameters (e.g. ?sessionId=5)
   const params = new URLSearchParams(window.location.search);

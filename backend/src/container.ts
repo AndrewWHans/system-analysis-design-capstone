@@ -13,13 +13,11 @@ import { TriggerEntity } from "./entity/TriggerEntity";
 import { MoodEntity } from "./entity/MoodEntity";
 import { SymptomEntity } from "./entity/SymptomEntity";
 import { ConditionEntity } from "./entity/ConditionEntity";
-import { DiagnosisEntity } from "./entity/DiagnosisEntity";
 
 // Custom Repositories
 import { TherapistRepository } from "./repository/TherapistRepository";
 import { TherapySessionRepository } from "./repository/TherapySessionRepository";
 import { TherapistChoiceRepository } from "./repository/TherapistChoiceRepository";
-import { DiagnosisRepository } from "./repository/DiagnosisRepository";
 
 // Services
 import { TherapistService } from "./service/TherapistService";
@@ -35,7 +33,6 @@ import { SeederService } from "./service/SeederService";
 const therapistRepo = new TherapistRepository();
 const sessionRepo = new TherapySessionRepository();
 const choiceRepo = new TherapistChoiceRepository();
-const diagnosisRepo = new DiagnosisRepository();
 
 // Generic Repositories
 const scenarioRepo = new BaseRepository(ScenarioEntity, "Scenario", ["rootDialogueNode", "correctDiagnosis"]);
@@ -49,20 +46,28 @@ const conditionRepo = new BaseRepository(ConditionEntity, "Condition", ["symptom
 
 // Initialize Services
 const simulationService = new SimulationService();
-const seederService = new SeederService(triggerRepo, moodRepo, copingRepo, symptomRepo, conditionRepo, diagnosisRepo);
+const seederService = new SeederService(
+    triggerRepo, 
+    moodRepo, 
+    copingRepo, 
+    symptomRepo, 
+    conditionRepo,
+    scenarioRepo,
+    nodeRepo,
+    choiceRepo
+);
 const therapistService = new TherapistService(therapistRepo);
-const sessionService = new TherapySessionService(sessionRepo, nodeRepo, messageRepo, choiceRepo, scenarioRepo, simulationService);
+const sessionService = new TherapySessionService(sessionRepo, nodeRepo, messageRepo, choiceRepo, scenarioRepo, conditionRepo, simulationService);
 
 export const services = {
     therapist: therapistService,
     session: sessionService,
-    scenario: new ScenarioService(scenarioRepo, nodeRepo, choiceRepo),
+    scenario: new ScenarioService(scenarioRepo, nodeRepo, choiceRepo, conditionRepo),
     symptom: new SymptomService(symptomRepo),
     coping: new BaseService(copingRepo, "Coping Mechanism"),
     trigger: new BaseService(triggerRepo, "Trigger"),
     mood: new BaseService(moodRepo, "Mood"),
     condition: new BaseService(conditionRepo, "Condition"),
-    diagnosis: new BaseService(diagnosisRepo, "Diagnosis"),
     dialogueNode: new DialogueNodeService(nodeRepo, choiceRepo),
     seeder: seederService
 };

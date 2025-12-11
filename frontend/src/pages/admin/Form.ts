@@ -30,12 +30,23 @@ export class AdminForm {
         }));
 
         this.container.innerHTML = `
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-xl font-bold dark:text-white">${id ? 'Edit' : 'Create'} ${this.config.label}</h3>
-                <button id="cancel-btn" class="text-sm text-gray-500 hover:underline">Cancel</button>
+            <div class="flex justify-between items-center mb-8 border-b border-gray-100 dark:border-gray-800 pb-4">
+                <div>
+                    <h3 class="text-2xl font-bold text-gray-900 dark:text-white">${id ? 'Edit' : 'Create'} ${this.config.label}</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Fill in the details below.</p>
+                </div>
+                <button id="cancel-btn" class="px-4 py-2 rounded-xl text-sm font-medium text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition">Cancel</button>
             </div>
-            <form id="admin-form" autocomplete="off">${fieldsHtml.join('')}
-                <button type="submit" class="mt-6 bg-[#5B3E86] text-white px-6 py-3 rounded-lg w-full font-medium hover:bg-[#4a326c] transition">Save</button>
+            
+            <!-- Added mx-auto here to center the form -->
+            <form id="admin-form" autocomplete="off" class="max-w-3xl mx-auto">
+                ${fieldsHtml.join('')}
+                
+                <div class="mt-8 pt-4 border-t border-gray-100 dark:border-gray-800 flex justify-end">
+                    <button type="submit" class="bg-[#5B3E86] text-white px-8 py-3 rounded-xl font-bold hover:bg-[#4a326c] transition shadow-lg hover:shadow-xl hover:-translate-y-0.5 transform">
+                        ${id ? 'Save Changes' : 'Create Record'}
+                    </button>
+                </div>
             </form>`;
 
         this.hydrate();
@@ -58,7 +69,7 @@ export class AdminForm {
             });
         });
 
-        // Initialize dynamic choice ists
+        // Initialize dynamic choice lists
         this.container.querySelectorAll('.choice-wrapper').forEach(async (wrapper) => {
             const endpoint = wrapper.getAttribute('data-endpoint')!;
             const container = wrapper.querySelector('.choice-container')!;
@@ -69,17 +80,17 @@ export class AdminForm {
 
             const addRow = (txt = '', next = '') => {
                 const row = document.createElement('div');
-                row.className = "flex gap-2 choice-row items-start";
+                row.className = "flex gap-3 choice-row items-start animate-fade-in-up";
                 
-                // We use a textarea for text to allow more content visibility
-                // We use a select with class 'tom-select-nested' to init TomSelect on it later
                 row.innerHTML = `
-                    <input class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-blue-500" value="${txt}" placeholder="Choice Text" required>
+                    <div class="flex-1">
+                        <input class="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-[#5B3E86] transition shadow-sm text-sm" value="${txt}" placeholder="Choice Text" required>
+                    </div>
                     <div class="w-1/3">
                         <select class="tom-select-nested" placeholder="Link to node..."><option value="">Link...</option>${optsHtml}</select>
                     </div>
-                    <button type="button" class="text-red-500 hover:text-red-700 font-bold px-2 py-2 remove transition">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    <button type="button" class="text-gray-400 hover:text-red-500 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition remove">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                     </button>
                 `;
                 
@@ -88,7 +99,6 @@ export class AdminForm {
                 row.querySelector('.remove')!.addEventListener('click', () => row.remove());
                 container.appendChild(row);
 
-                // Initialize TomSelect on this specific new row's select
                 new TomSelect(row.querySelector('.tom-select-nested') as HTMLSelectElement, {
                     maxItems: 1,
                     create: false,

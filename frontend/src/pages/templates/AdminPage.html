@@ -1,9 +1,9 @@
 <div class="h-screen bg-gray-50 dark:bg-gray-950 font-sans transition-colors duration-300 flex overflow-hidden relative">
     
-    <!-- Background Pattern (Same as Chat/Profile) -->
+    <!-- Background Pattern -->
     <div class="absolute inset-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none z-0" style="background-image: url(&quot;data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E&quot;);"></div>
 
-    <!-- Sidebar: Styled to match Chat Page -->
+    <!-- Sidebar -->
     <aside class="w-72 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col h-full flex-shrink-0 z-20 hidden md:flex shadow-sm relative">
         
         <!-- Header -->
@@ -29,30 +29,27 @@
         </div>
 
         <nav class="flex-1 px-4 space-y-1 overflow-y-auto">
-            <button class="nav-item w-full text-left px-4 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-[#5B3E86]/10 hover:text-[#5B3E86] dark:hover:bg-[#5B3E86]/20 dark:hover:text-white transition font-medium text-sm" data-target="CopingMechanism">
+            <button class="nav-item w-full text-left px-4 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-[#5B3E86]/10 hover:text-[#5B3E86] dark:hover:bg-[#5B3E86]/20 dark:hover:text-white cursor-pointer transition font-medium text-sm" data-target="CopingMechanism">
                 Coping Mechanism
             </button>
-            <button class="nav-item w-full text-left px-4 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-[#5B3E86]/10 hover:text-[#5B3E86] dark:hover:bg-[#5B3E86]/20 dark:hover:text-white transition font-medium text-sm" data-target="Trigger">
+            <button class="nav-item w-full text-left px-4 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-[#5B3E86]/10 hover:text-[#5B3E86] dark:hover:bg-[#5B3E86]/20 dark:hover:text-white cursor-pointer transition font-medium text-sm" data-target="Trigger">
                 Trigger
             </button>
-            <button class="nav-item w-full text-left px-4 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-[#5B3E86]/10 hover:text-[#5B3E86] dark:hover:bg-[#5B3E86]/20 dark:hover:text-white transition font-medium text-sm" data-target="Mood">
+            <button class="nav-item w-full text-left px-4 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-[#5B3E86]/10 hover:text-[#5B3E86] dark:hover:bg-[#5B3E86]/20 dark:hover:text-white cursor-pointer transition font-medium text-sm" data-target="Mood">
                 Mood
             </button>
-            <button class="nav-item w-full text-left px-4 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-[#5B3E86]/10 hover:text-[#5B3E86] dark:hover:bg-[#5B3E86]/20 dark:hover:text-white transition font-medium text-sm" data-target="Symptom">
+            <button class="nav-item w-full text-left px-4 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-[#5B3E86]/10 hover:text-[#5B3E86] dark:hover:bg-[#5B3E86]/20 dark:hover:text-white cursor-pointer transition font-medium text-sm" data-target="Symptom">
                 Symptom
             </button>
-            <button class="nav-item w-full text-left px-4 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-[#5B3E86]/10 hover:text-[#5B3E86] dark:hover:bg-[#5B3E86]/20 dark:hover:text-white transition font-medium text-sm" data-target="Condition">
+            <button class="nav-item w-full text-left px-4 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-[#5B3E86]/10 hover:text-[#5B3E86] dark:hover:bg-[#5B3E86]/20 dark:hover:text-white cursor-pointer transition font-medium text-sm" data-target="Condition">
                 Condition
-            </button>
-            <button class="nav-item w-full text-left px-4 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-[#5B3E86]/10 hover:text-[#5B3E86] dark:hover:bg-[#5B3E86]/20 dark:hover:text-white transition font-medium text-sm" data-target="Diagnosis">
-                Diagnosis
             </button>
             
             <div class="pt-4 mt-2 mb-2 border-t border-gray-100 dark:border-gray-800">
                  <span class="px-2 text-xs font-bold text-gray-400 uppercase tracking-wider block mb-2">Simulation</span>
             </div>
             
-            <button class="nav-item w-full text-left px-4 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-[#5B3E86]/10 hover:text-[#5B3E86] dark:hover:bg-[#5B3E86]/20 dark:hover:text-white transition font-medium text-sm" data-target="Scenario">
+            <button class="nav-item w-full text-left px-4 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-[#5B3E86]/10 hover:text-[#5B3E86] dark:hover:bg-[#5B3E86]/20 dark:hover:text-white cursor-pointer transition font-medium text-sm" data-target="Scenario">
                 Scenarios
             </button>
         </nav>
@@ -70,7 +67,7 @@
                     <h2 id="page-title" class="text-3xl font-bold text-gray-900 dark:text-white">Coping Mechanisms</h2>
                     <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage entity records and configurations.</p>
                 </div>
-                <button id="btn-create-new" class="bg-[#5B3E86] text-white px-6 py-2.5 rounded-xl font-bold hover:bg-[#4a326c] transition shadow-lg hover:shadow-xl hover:-translate-y-0.5 flex items-center gap-2">
+                <button id="btn-create-new" class="bg-[#5B3E86] text-white px-6 py-2.5 rounded-xl font-bold hover:bg-[#4a326c] transition shadow-lg hover:shadow-xl hover:-translate-y-0.5 flex items-center gap-2 cursor-pointer">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                     Create New
                 </button>

@@ -1,7 +1,7 @@
 import { BaseRepository } from "../repository/BaseRepository";
 import { ScenarioEntity } from "../entity/ScenarioEntity";
 import { DialogueNodeEntity } from "../entity/DialogueNodeEntity";
-import { DiagnosisEntity } from "../entity/DiagnosisEntity";
+import { ConditionEntity } from "../entity/ConditionEntity";
 import { TherapistChoiceEntity } from "../entity/TherapistChoiceEntity";
 import { BadRequestError, NotFoundError } from "../utils/AppError";
 import { AppDataSource } from "../data-source";
@@ -22,7 +22,7 @@ export interface GraphNode {
 export interface GraphPayload {
     name: string;
     description: string;
-    diagnosisId: number;
+    conditionId: number; 
     nodes: GraphNode[];
 }
 
@@ -30,13 +30,14 @@ export class ScenarioService {
     constructor(
         private scenarioRepository: BaseRepository<ScenarioEntity>,
         private dialogueNodeRepository: BaseRepository<DialogueNodeEntity>,
-        private therapistChoiceRepository: BaseRepository<TherapistChoiceEntity>
+        private therapistChoiceRepository: BaseRepository<TherapistChoiceEntity>,
+        private conditionRepository: BaseRepository<ConditionEntity>
     ) {}
 
     async getScenarioByID(scenarioID: number): Promise<any> {
         const scenario = await this.scenarioRepository.repo.findOne({
             where: { id: scenarioID },
-            relations: ["correctDiagnosis", "correctDiagnosis.condition", "rootDialogueNode"]
+            relations: ["correctDiagnosis", "rootDialogueNode"]
         });
 
         if (!scenario) throw new NotFoundError("Scenario not found");
@@ -83,7 +84,7 @@ export class ScenarioService {
 
         return await AppDataSource.transaction(async (transactionalEntityManager) => {
             if (!data.name?.trim()) throw new BadRequestError("Scenario Name is required");
-            if (!data.diagnosisId) throw new BadRequestError("A correct diagnosis is required");
+            if (!data.conditionId) throw new BadRequestError("A correct condition is required");
 
             let scenario: ScenarioEntity;
 
@@ -110,9 +111,9 @@ export class ScenarioService {
             scenario.name = data.name;
             scenario.description = data.description || "";
             
-            const diagnosis = await transactionalEntityManager.findOne(DiagnosisEntity, { where: { id: data.diagnosisId } });
-            if (!diagnosis) throw new BadRequestError("Invalid Diagnosis ID");
-            scenario.correctDiagnosis = diagnosis;
+            const condition = await transactionalEntityManager.findOne(ConditionEntity, { where: { id: data.conditionId } });
+            if (!condition) throw new BadRequestError("Invalid Condition ID");
+            scenario.correctDiagnosis = condition;
 
             // Save scenario
             const savedScenario = await transactionalEntityManager.save(ScenarioEntity, scenario);
@@ -126,7 +127,7 @@ export class ScenarioService {
                 nodeEntity.botText = uiNode.botText || "...";
                 nodeEntity.uiX = uiNode.x || 0;
                 nodeEntity.uiY = uiNode.y || 0;
-                nodeEntity.isEndNode = !!uiNode.isEndNode; // Save End Node State
+                nodeEntity.isEndNode = !!uiNode.isEndNode; 
                 nodeEntity.scenario = savedScenario;
                 
                 const savedNode = await transactionalEntityManager.save(DialogueNodeEntity, nodeEntity);
@@ -190,24 +191,15 @@ export class ScenarioService {
         await this.scenarioRepository.repo.remove(scenario);
     }
 
-    /**
-     * Validates that the graph is logical:
-     * 1. Has a root node.
-     * 2. Has at least one end Node.
-     * 3. A path exists from root -> end Node.
-     */
     private validateGraphConnectivity(nodes: GraphNode[]) {
         if (!nodes || nodes.length === 0) throw new BadRequestError("Scenario must have at least one node.");
 
-        // 1. Identify root and end Nodes
         const root = nodes.find(n => n.isRoot);
         const endNodes = nodes.filter(n => n.isEndNode);
 
         if (!root) throw new BadRequestError("Scenario must have a Start Node (Root).");
         if (endNodes.length === 0) throw new BadRequestError("Scenario must have at least one End Node to finish the session.");
 
-        // 2. Build Adjacency List for traversal
-        // Map<NodeID, Array<TargetNodeID>>
         const adjList = new Map<string, string[]>();
         
         nodes.forEach(n => {
@@ -217,7 +209,6 @@ export class ScenarioService {
             adjList.set(n.id, targets);
         });
 
-        // 3. Confirm that start node can reach end node.
         const visited = new Set<string>();
         const queue: string[] = [root.id];
         let canReachEnd = false;
@@ -228,13 +219,11 @@ export class ScenarioService {
             if (visited.has(currentId)) continue;
             visited.add(currentId);
 
-            // Check if current node is an End Node
             if (endNodes.some(en => en.id == currentId)) {
                 canReachEnd = true;
-                break; // We found one valid path, scenario is valid.
+                break; 
             }
 
-            // Add neighbors to queue
             const neighbors = adjList.get(currentId) || [];
             for (const neighborId of neighbors) {
                 if (!visited.has(neighborId)) {

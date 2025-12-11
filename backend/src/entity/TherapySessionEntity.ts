@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToOne, JoinColumn } from "typeorm";
 import { MessageEntity } from "./MessageEntity";
-import { DiagnosisEntity } from "./DiagnosisEntity";
+import { ConditionEntity } from "./ConditionEntity";
 import { ScenarioEntity } from "./ScenarioEntity";
 
 @Entity({ name: "therapy_sessions" })
@@ -32,9 +32,9 @@ export class TherapySessionEntity {
     })
     messages!: MessageEntity[];
 
-    @ManyToOne(() => DiagnosisEntity, { nullable: true })
-    @JoinColumn({ name: "final_diagnosis_id" })
-    finalDiagnosis!: DiagnosisEntity | null;
+    @ManyToOne(() => ConditionEntity, { nullable: true })
+    @JoinColumn({ name: "final_condition_id" })
+    finalDiagnosis!: ConditionEntity | null;
 
     @Column({ type: "boolean", nullable: true })
     isDiagnosisCorrect!: boolean | null;

@@ -13,29 +13,44 @@ Therabot is a diagnostic interview training platform designed for psychology stu
 *   **`.gitignore`**: Specifies files to be ignored by Git (node_modules, build artifacts).
 
 ### Backend (`/backend`)
-*   **`src/index.ts`**: The entry point of the API server. Defines routes and initializes services.
-*   **`src/data-source.ts`**: Configuration for the MySQL database connection.
-*   **`src/entity/`**: Defines Database Models (Tables).
-    *   *Examples: `TherapistEntity.ts`, `ScenarioEntity.ts`, `TherapySessionEntity.ts`.*
-*   **`src/repository/`**: Handles direct database interactions (CRUD operations).
-    *   *Examples: `ScenarioRepository.ts`, `TherapistRepository.ts`.*
-*   **`src/service/`**: Contains business logic, separating the controller logic from the database.
-    *   *Examples: `TherapistService.ts` (Auth), `TherapySessionService.ts` (Chat logic).*
-*   **`src/middleware/`**: Express middleware functions.
-    *   `authMiddleware.ts`: Handles JWT verification and Admin checks.
-*   **`src/utils/`**: Utility classes.
-    *   `AppError.ts`, `errorHandler.ts`: Standardized error handling.
+*   **`src/index.ts`**: Entry point. Sets up Express, CORS, and starts the server.
+*   **`src/container.ts`**: Dependency Injection container. Initializes repositories and services to ensure separation of concerns.
+*   **`src/data-source.ts`**: TypeORM configuration for the MySQL database connection.
+*   **`src/controller/`**: Handles HTTP requests and responses.
+    *   *Examples: `AuthController.ts`, `SessionController.ts`.*
+*   **`src/service/`**: Contains core business logic.
+    *   `TherapySessionService.ts`: Manages chat flow and logic.
+    *   `SimulationService.ts`: Handles state transitions in the dialogue graph.
+    *   `SeederService.ts`: Populates the database with initial clinical data and scenarios.
+    *   `ScenarioService.ts`: Manages the construction of dialogue graphs.
+*   **`src/repository/`**: Abstraction layer for database access.
+    *   *Examples: `BaseRepository.ts` (Generic CRUD), `TherapySessionRepository.ts`.*
+*   **`src/entity/`**: Database Models (TypeORM Entities).
+    *   *Examples: `ScenarioEntity.ts`, `DialogueNodeEntity.ts`, `TherapistEntity.ts`.*
+*   **`src/routes/`**: Route definitions.
+    *   `api.routes.ts`: Public and authenticated User/Chat routes.
+    *   `admin.routes.ts`: Administrative routes for managing content.
+*   **`src/middleware/`**: Express middleware.
+    *   `authMiddleware.ts`: JWT verification and RBAC (Role-Based Access Control).
+*   **`src/utils/`**: Helper utilities.
+    *   `AppError.ts`, `catchAsync.ts`: Centralized error handling.
 
 ### Frontend (`/frontend`)
-*   **`src/main.ts`**: The entry point. Handles client-side routing and initialization.
-*   **`src/pages/`**: Logic files for specific application pages.
-    *   `ChatPage.ts`, `AdminPage.ts`, `LoginPage.ts`, etc.
-*   **`src/pages/templates/`**: Raw HTML files loaded by the page logic files.
-    *   `ChatPage.html`, `AdminPage.html`, etc.
-*   **`src/utils/`**: Frontend helper functions.
-    *   `auth.ts`: Manages JWT tokens in LocalStorage.
-    *   `theme.ts`: Handles Dark/Light mode toggling.
-*   **`vite.config.ts`**: Configuration for the Vite build tool.
+*   **`src/main.ts`**: Client-side entry point. Handles routing and DOM manipulation.
+*   **`src/pages/`**: Logic for individual pages.
+    *   `ChatPage.ts`: Main simulation interface.
+    *   `AdminPage.ts`: Dashboard for managing DB entities.
+    *   `HomePage.ts`, `LoginPage.ts`, `ProfilePage.ts`, etc.
+*   **`src/pages/templates/`**: Raw HTML strings loaded by page logic.
+    *   *Examples: `ChatPage.html`, `AdminPage.html`.*
+*   **`src/pages/admin/`**: Modular components for the Admin Dashboard.
+    *   `ScenarioBuilder.ts`: Visual node-graph editor (Drawflow integration).
+    *   `Table.ts`: Generic data table renderer.
+    *   `Form.ts`: Dynamic form generator for creating/editing entities.
+    *   `api.ts`: Admin-specific API fetch wrappers.
+*   **`src/utils/`**: Frontend helpers.
+    *   `auth.ts`: JWT storage, retrieval, and decoding.
+    *   `theme.ts`: Dark/Light mode logic and custom web component.
 
 ---
 

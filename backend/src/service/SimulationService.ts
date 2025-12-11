@@ -1,4 +1,4 @@
-import { DiagnosisEntity } from "../entity/DiagnosisEntity";
+import { ConditionEntity } from "../entity/ConditionEntity";
 import { ScenarioEntity } from "../entity/ScenarioEntity";
 import { DialogueNodeEntity } from "../entity/DialogueNodeEntity";
 import { TherapistChoiceEntity } from "../entity/TherapistChoiceEntity";
@@ -17,18 +17,18 @@ export class SimulationService {
     }
 
     /**
-     * Evaluates if a submitted diagnosis matches the scenario's correct diagnosis.
+     * Evaluates if a submitted diagnosis (Condition) matches the scenario's correct condition.
      */
-    evaluateDiagnosis(scenario: ScenarioEntity, submittedDiagnosis: DiagnosisEntity): { isCorrect: boolean; feedback: string } {
-        const correctConditionId = scenario.correctDiagnosis?.condition?.id;
-        const submittedConditionId = submittedDiagnosis.condition?.id;
+    evaluateDiagnosis(scenario: ScenarioEntity, submittedCondition: ConditionEntity): { isCorrect: boolean; feedback: string } {
+        const correctConditionId = scenario.correctDiagnosis?.id;
+        const submittedConditionId = submittedCondition.id;
 
         const isCorrect = correctConditionId === submittedConditionId;
 
         // Centralized feedback logic
         const feedback = isCorrect 
-            ? "Diagnosis matches the scenario's correct diagnosis. Well done."
-            : `Diagnosis incorrect. The patient is actually suffering from ${scenario.correctDiagnosis?.condition?.name || 'Unknown Condition'}.`;
+            ? "Diagnosis matches the scenario's correct condition. Well done."
+            : `Diagnosis incorrect. The patient is actually suffering from ${scenario.correctDiagnosis?.name || 'Unknown Condition'}.`;
 
         return { isCorrect, feedback };
     }

@@ -19,7 +19,6 @@ const triggerCtrl = new BaseController(services.trigger);
 const moodCtrl = new BaseController(services.mood);
 const symptomCtrl = new BaseController(services.symptom);
 const conditionCtrl = new BaseController(services.condition);
-const diagnosisCtrl = new BaseController(services.diagnosis);
 const nodeCtrl = new BaseController(services.dialogueNode);
 
 // --- Routes ---
@@ -51,9 +50,6 @@ router.get("/symptoms/:id", catchAsync(symptomCtrl.getById));
 
 router.get("/conditions", catchAsync(conditionCtrl.getAll));
 router.get("/conditions/:id", catchAsync(conditionCtrl.getById));
-
-router.get("/diagnoses", catchAsync(diagnosisCtrl.getAll));
-router.get("/diagnoses/:id", catchAsync(diagnosisCtrl.getById));
 
 router.get("/dialogue-nodes", catchAsync(nodeCtrl.getAll));
 router.get("/dialogue-nodes/:id", catchAsync(nodeCtrl.getById));

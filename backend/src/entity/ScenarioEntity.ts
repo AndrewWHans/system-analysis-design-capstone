@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToOne, JoinColumn, ManyToOne } from "typeorm";
-import { DiagnosisEntity } from "./DiagnosisEntity";
+import { ConditionEntity } from "./ConditionEntity";
 import { DialogueNodeEntity } from "./DialogueNodeEntity";
 
 @Entity({ name: "scenarios" })
@@ -13,9 +13,9 @@ export class ScenarioEntity {
     @Column("text")
     description!: string;
 
-    @ManyToOne(() => DiagnosisEntity)
-    @JoinColumn({ name: "correct_diagnosis_id" })
-    correctDiagnosis!: DiagnosisEntity;
+    @ManyToOne(() => ConditionEntity)
+    @JoinColumn({ name: "correct_condition_id" })
+    correctDiagnosis!: ConditionEntity;
 
     @OneToOne(() => DialogueNodeEntity)
     @JoinColumn({ name: "root_dialogue_node_id" })

@@ -18,68 +18,98 @@ export class ScenarioBuilder {
     async render(id: number | null) {
         this.scenarioId = id;
         
-        const diagnoses = await AdminApi.getAll('diagnoses');
+        const conditions = await AdminApi.getAll('conditions');
         let scenarioData: any = null;
         if (id) {
             scenarioData = await AdminApi.getOne('scenarios', id);
         }
 
         this.container.innerHTML = `
-            <div class="flex h-[calc(100vh-150px)] border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-                <!-- Sidebar -->
-                <div class="w-80 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col z-20 shadow-xl">
-                    <div class="p-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800">
+            <div class="flex h-[calc(100vh-140px)] border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden shadow-sm bg-white dark:bg-gray-900">
+                
+                <!-- Editor Sidebar -->
+                <div class="w-80 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col z-20 shadow-sm relative">
+                    
+                    <!-- Header -->
+                    <div class="p-5 border-b border-gray-100 dark:border-gray-800">
                         <div class="flex justify-between items-center mb-4">
-                            <h3 class="font-bold dark:text-white">Properties</h3>
-                            <button id="sb-cancel" class="text-sm text-gray-500 hover:text-black dark:hover:text-white">Exit</button>
+                            <h3 class="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                <svg class="w-5 h-5 text-[#5B3E86]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                Scenario Props
+                            </h3>
+                            <button id="sb-cancel" class="text-xs font-bold text-gray-400 hover:text-red-500 cursor-pointer transition uppercase tracking-wider">Close</button>
                         </div>
-                        <div class="space-y-3">
+                        <div class="space-y-4">
                             <div>
-                                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Scenario Name</label>
-                                <input id="sb-name" type="text" class="w-full px-3 py-2 bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded text-sm dark:text-white" value="${scenarioData?.name || ''}">
+                                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Name</label>
+                                <input id="sb-name" type="text" class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm dark:text-white outline-none focus:ring-2 focus:ring-[#5B3E86] transition" value="${scenarioData?.name || ''}" placeholder="e.g. Anxiety Case 1">
                             </div>
                             <div>
-                                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Description</label>
-                                <textarea id="sb-desc" class="w-full px-3 py-2 bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded text-sm dark:text-white" rows="2">${scenarioData?.description || ''}</textarea>
+                                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Description</label>
+                                <textarea id="sb-desc" class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm dark:text-white outline-none focus:ring-2 focus:ring-[#5B3E86] transition resize-none" rows="2" placeholder="Brief context...">${scenarioData?.description || ''}</textarea>
                             </div>
                             <div>
-                                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Correct Diagnosis</label>
+                                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Diagnosis</label>
                                 <select id="sb-diag" class="w-full" placeholder="Select diagnosis...">
                                     <option value="">Select...</option>
-                                    ${diagnoses.map(d => `<option value="${d.id}" ${scenarioData?.correctDiagnosis?.id === d.id ? 'selected' : ''}>${d.condition?.name || d.id}</option>`).join('')}
+                                    ${conditions.map(d => `<option value="${d.id}" ${scenarioData?.correctDiagnosis?.id === d.id ? 'selected' : ''}>${d.name || d.id}</option>`).join('')}
                                 </select>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="flex-1 p-4 bg-gray-50 dark:bg-gray-900 overflow-y-auto">
-                        <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Toolbox</div>
+                    <!-- Nodes Toolbox -->
+                    <div class="flex-1 p-5 overflow-y-auto bg-gray-50/50 dark:bg-black/20">
+                        <div class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Nodes Library</div>
                         <div class="grid gap-3">
                             <!-- Standard Node -->
-                            <div class="drag-item cursor-grab active:cursor-grabbing bg-white dark:bg-gray-800 p-3 rounded border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition flex items-center gap-2" draggable="true" data-node="dialogue">
-                                <div class="w-2 h-2 rounded-full bg-gray-400"></div>
-                                <span class="text-sm font-medium dark:text-gray-200">Dialogue Node</span>
+                            <div class="drag-item cursor-grab active:cursor-grabbing bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition flex items-center gap-3 group" draggable="true" data-node="dialogue">
+                                <div class="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center group-hover:bg-[#5B3E86] group-hover:text-white transition text-gray-500">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
+                                </div>
+                                <div>
+                                    <span class="text-sm font-bold text-gray-900 dark:text-white block">Dialogue Node</span>
+                                    <span class="text-[10px] text-gray-500">Standard bot response</span>
+                                </div>
                             </div>
                             <!-- End Node -->
-                            <div class="drag-item cursor-grab active:cursor-grabbing bg-white dark:bg-gray-800 p-3 rounded border border-red-200 dark:border-red-900 shadow-sm hover:shadow-md transition flex items-center gap-2" draggable="true" data-node="end">
-                                <div class="w-2 h-2 rounded-full bg-red-500"></div>
-                                <span class="text-sm font-medium dark:text-gray-200">End Node</span>
+                            <div class="drag-item cursor-grab active:cursor-grabbing bg-white dark:bg-gray-800 p-4 rounded-xl border border-red-100 dark:border-red-900/30 shadow-sm hover:shadow-md transition flex items-center gap-3 group" draggable="true" data-node="end">
+                                <div class="w-8 h-8 rounded-lg bg-red-50 dark:bg-red-900/20 flex items-center justify-center group-hover:bg-red-500 group-hover:text-white transition text-red-500">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0zM9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"></path></svg>
+                                </div>
+                                <div>
+                                    <span class="text-sm font-bold text-gray-900 dark:text-white block">End Session</span>
+                                    <span class="text-[10px] text-gray-500">Terminates the chat</span>
+                                </div>
                             </div>
                         </div>
-                        <div class="mt-6 text-xs text-gray-400 space-y-2">
-                            <p>1. <span class="text-green-600 font-bold">Green</span>: Start Node (Bot starts here).</p>
-                            <p>2. <span class="text-red-500 font-bold">Red</span>: End Node (Terminates session).</p>
-                            <p>3. Drag from <span class="font-bold text-gray-500">Grey Dot</span> to <span class="font-bold text-blue-500">Blue Dot</span> to connect.</p>
+                        
+                        <div class="mt-8 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-900/30">
+                            <h4 class="text-xs font-bold text-blue-800 dark:text-blue-300 mb-2 flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                Quick Tips
+                            </h4>
+                            <ul class="text-[10px] text-blue-700 dark:text-blue-400 space-y-1.5 list-disc pl-3">
+                                <li><span class="font-bold">Green Node</span> is the Root (Start).</li>
+                                <li>Connect <span class="font-bold">Grey Dot</span> (Output) to <span class="font-bold">Blue Dot</span> (Input).</li>
+                                <li>Drag canvas to pan, ctrl + scroll to zoom.</li>
+                            </ul>
                         </div>
                     </div>
 
-                    <div class="p-4 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
-                        <button id="sb-save" class="w-full bg-[#5B3E86] text-white py-2 rounded-lg font-medium hover:bg-[#4a326c] transition shadow-lg">Save Scenario</button>
+                    <!-- Footer Action -->
+                    <div class="p-5 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+                        <button id="sb-save" class="w-full bg-[#5B3E86] text-white py-3 rounded-xl font-bold hover:bg-[#4a326c] transition shadow-lg hover:shadow-xl hover:-translate-y-0.5 flex items-center justify-center gap-2 cursor-pointer">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                            Save Scenario
+                        </button>
                     </div>
                 </div>
 
                 <!-- Canvas -->
-                <div id="drawflow" class="flex-1 bg-gray-200 dark:bg-black relative overflow-hidden parent-drawflow"></div>
+                <div id="drawflow" class="flex-1 bg-gray-100 dark:bg-black relative overflow-hidden parent-drawflow" 
+                     style="background-image: radial-gradient(#cbd5e1 1px, transparent 1px); background-size: 20px 20px;">
+                </div>
             </div>
         `;
 
@@ -115,10 +145,8 @@ export class ScenarioBuilder {
                 const nodeEl = document.getElementById(`node-${sourceDfId}`)!;
                 const choiceList = nodeEl.querySelector('.choices-list');
 
-                // End nodes don't have choices
                 if (!choiceList) return;
 
-                // Re-create outputs and connections
                 n.choices.forEach((choice: any, index: number) => {
                     const targetDfId = dbIdToDrawflowId.get(choice.targetNodeId);
                     
@@ -126,8 +154,8 @@ export class ScenarioBuilder {
                     const outputName = `output_${index + 1}`;
 
                     const row = document.createElement('div');
-                    row.className = "flex items-center h-[34px]"; 
-                    row.innerHTML = `<input type="text" class="w-full text-xs px-2 py-1 h-full border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white outline-none focus:border-blue-500 transition" value="${choice.text}" data-output="${outputName}">`;
+                    row.className = "flex items-center h-[38px]"; 
+                    row.innerHTML = `<input type="text" class="w-full text-xs px-3 py-2 h-full border border-gray-200 dark:border-gray-700 rounded-lg dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-[#5B3E86] transition shadow-sm" value="${choice.text}" data-output="${outputName}">`;
                     choiceList.appendChild(row);
                     row.querySelector('input')!.addEventListener('mousedown', (e) => e.stopPropagation());
 
@@ -138,7 +166,6 @@ export class ScenarioBuilder {
             });
 
         } else {
-            // Create start and end nodes automatically
             this.addNodeToCanvas('Hello. I am here to help. How are you feeling today?', 100, 200, 'root');
             this.addNodeToCanvas('Thank you for sharing. We will stop here for today.', 700, 200, 'end');
         }
@@ -210,37 +237,42 @@ export class ScenarioBuilder {
         const isRoot = type === 'root';
         const isEnd = type === 'end';
 
-        // Styles
-        let borderColor = 'border-gray-200 dark:border-gray-700';
-        let headerColor = 'text-gray-500';
-        let title = 'DIALOGUE';
+        let wrapperClass = 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 shadow-xl';
+        let headerClass = 'bg-gray-50 dark:bg-gray-900 border-b border-gray-100 dark:border-gray-700 text-gray-500';
+        let title = 'Dialogue Node';
+        let icon = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>`;
 
         if (isRoot) {
-            borderColor = 'border-green-500 border-4';
-            headerColor = 'text-green-600';
-            title = 'START NODE';
+            wrapperClass = 'bg-white dark:bg-gray-800 border-green-400 ring-2 ring-green-100 dark:ring-green-900 shadow-2xl';
+            headerClass = 'bg-green-50 dark:bg-green-900/20 border-b border-green-100 dark:border-green-800 text-green-700 dark:text-green-400';
+            title = 'Start Node';
+            icon = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg>`;
         } else if (isEnd) {
-            borderColor = 'border-red-500 border-4';
-            headerColor = 'text-red-500';
-            title = 'END NODE';
+            wrapperClass = 'bg-white dark:bg-gray-800 border-red-400 ring-2 ring-red-100 dark:ring-red-900 shadow-2xl';
+            headerClass = 'bg-red-50 dark:bg-red-900/20 border-b border-red-100 dark:border-red-800 text-red-700 dark:text-red-400';
+            title = 'End Node';
+            icon = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0zM9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"></path></svg>`;
         }
 
-        // HTML content
+        // Updated header HTML to use spans and flex-shrink to prevent overlap
         const html = `
-            <div class="node-wrapper node-content bg-white dark:bg-gray-800 rounded-lg shadow-lg ${borderColor} w-72 transition-colors duration-200" data-type="${type}">
-                <div class="bg-gray-100 dark:bg-gray-900 p-2 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center rounded-t-lg h-10 select-none">
-                    <span class="text-xs font-bold uppercase ${headerColor}">${title}</span>
-                    ${!isRoot ? '<button class="delete-node text-red-400 hover:text-red-600 font-bold px-2">×</button>' : ''}
+            <div class="node-wrapper node-content rounded-2xl ${wrapperClass} w-80 transition-all duration-200 overflow-hidden" data-type="${type}">
+                <div class="p-3 ${headerClass} flex justify-between items-center select-none">
+                    <div class="flex items-center gap-3 text-xs font-bold uppercase tracking-wider overflow-hidden">
+                        <span class="flex-shrink-0 w-4 h-4 flex items-center justify-center">${icon}</span>
+                        <span class="flex-1 truncate">${title}</span>
+                    </div>
+                    ${!isRoot ? '<button class="delete-node text-gray-400 hover:text-red-500 transition px-2 font-bold text-lg leading-none">&times;</button>' : ''}
                 </div>
-                <div class="p-3 select-none">
-                    <label class="block text-[10px] uppercase text-gray-400 mb-1 font-semibold">Bot Says:</label>
-                    <textarea df-botText class="w-full text-sm p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white outline-none resize-none h-24 font-normal" placeholder="${isEnd ? 'Closing remarks...' : 'Hello...'}">${initialText}</textarea>
+                <div class="p-4 select-none">
+                    <label class="block text-[10px] uppercase text-gray-400 mb-2 font-bold tracking-wide">AI Response</label>
+                    <textarea df-botText class="w-full text-sm p-3 border border-gray-200 dark:border-gray-700 rounded-xl dark:bg-gray-900 dark:text-white outline-none focus:border-[#5B3E86] transition resize-none h-24 font-normal shadow-inner leading-relaxed" placeholder="${isEnd ? 'Session ending remarks...' : 'Enter bot response...'}">${initialText}</textarea>
                 </div>
                 ${!isEnd ? `
-                <div class="p-3 pt-0 bg-white dark:bg-gray-800 rounded-b-lg">
+                <div class="px-4 pb-4 pt-0">
                     <div class="choices-list flex flex-col gap-2"></div>
-                    <button class="add-choice-btn mt-3 w-full text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 py-2 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition font-medium border border-transparent dark:border-gray-600 dashed-border">
-                        + Add Choice
+                    <button class="add-choice-btn mt-3 w-full text-xs font-bold bg-gray-50 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 py-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-[#5B3E86] dark:hover:text-white transition border border-dashed border-gray-300 dark:border-gray-600 cursor-pointer">
+                        + Add Therapist Option
                     </button>
                 </div>` : ''}
             </div>
@@ -252,17 +284,14 @@ export class ScenarioBuilder {
             const nodeEl = document.getElementById(`node-${nodeId}`);
             if(!nodeEl) return;
             
-            // Delete logic
             nodeEl.querySelector('.delete-node')?.addEventListener('click', () => {
                 this.editor.removeNodeId(`node-${nodeId}`);
             });
 
-            // Prevent drag on inputs
             nodeEl.querySelectorAll('input, textarea').forEach(el => {
                 el.addEventListener('mousedown', (e) => e.stopPropagation());
             });
 
-            // Add choice logic (Only for non-end nodes)
             const choiceBtn = nodeEl.querySelector('.add-choice-btn');
             const choiceList = nodeEl.querySelector('.choices-list');
 
@@ -275,8 +304,8 @@ export class ScenarioBuilder {
                     this.editor.addNodeOutput(nodeId);
                     
                     const row = document.createElement('div');
-                    row.className = "flex items-center h-[34px]"; 
-                    row.innerHTML = `<input type="text" class="w-full text-xs px-2 py-1 h-full border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white outline-none focus:border-blue-500 transition" placeholder="Therapist response..." data-output="${outputName}">`;
+                    row.className = "flex items-center h-[38px] animate-fade-in-up"; 
+                    row.innerHTML = `<input type="text" class="w-full text-xs px-3 py-2 h-full border border-gray-200 dark:border-gray-700 rounded-lg dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-[#5B3E86] transition shadow-sm" placeholder="Therapist choice..." data-output="${outputName}">`;
                     
                     choiceList.appendChild(row);
                     row.querySelector('input')!.addEventListener('mousedown', (e) => e.stopPropagation());
@@ -294,9 +323,9 @@ export class ScenarioBuilder {
 
         const name = nameInput.value;
         const description = descInput.value;
-        const diagnosisId = Number(diagInput.value);
+        const conditionId = Number(diagInput.value);
 
-        if (!name || !diagnosisId) {
+        if (!name || !conditionId) {
             alert("Please provide a Scenario Name and select a Correct Diagnosis.");
             return;
         }
@@ -316,7 +345,6 @@ export class ScenarioBuilder {
 
             const choices: any[] = [];
 
-            // End nodes have no choices
             if (!isEndNode) {
                 const choiceInputs = nodeEl.querySelectorAll<HTMLInputElement>('.choices-list input');
 
@@ -345,7 +373,7 @@ export class ScenarioBuilder {
             });
         }
 
-        const payload = { name, description, diagnosisId, nodes };
+        const payload = { name, description, conditionId, nodes };
 
         try {
             const endpoint = this.scenarioId ? `admin/scenarios/graph/${this.scenarioId}` : `admin/scenarios/graph`;

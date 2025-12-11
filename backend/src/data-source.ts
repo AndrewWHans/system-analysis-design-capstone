@@ -9,7 +9,6 @@ import { TherapySessionEntity } from "./entity/TherapySessionEntity";
 import { MessageEntity } from "./entity/MessageEntity";
 import { ConditionEntity } from "./entity/ConditionEntity";
 import { SymptomEntity } from "./entity/SymptomEntity";
-import { DiagnosisEntity } from "./entity/DiagnosisEntity";
 import { TriggerEntity } from "./entity/TriggerEntity";
 import { MoodEntity } from "./entity/MoodEntity";
 import { CopingMechanismEntity } from "./entity/CopingMechanismEntity";
@@ -34,7 +33,6 @@ export const AppDataSource = new DataSource({
         MessageEntity,
         ConditionEntity,
         SymptomEntity,
-        DiagnosisEntity,
         TriggerEntity,
         MoodEntity,
         CopingMechanismEntity

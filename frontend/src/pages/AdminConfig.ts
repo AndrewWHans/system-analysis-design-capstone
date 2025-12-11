@@ -16,22 +16,10 @@ export interface EntityConfig {
 
 const nameField: AdminField = { name: 'name', label: 'Name', type: 'text', required: true };
 
-export const ENTITY_CONFIGS: Record<string, EntityConfig> = {
-    CopingMechanism: {
-        endpoint: 'coping-mechanisms',
-        label: 'Coping Mechanisms',
-        fields: [nameField]
-    },
-    Trigger: {
-        endpoint: 'triggers',
-        label: 'Triggers',
-        fields: [nameField]
-    },
-    Mood: {
-        endpoint: 'moods',
-        label: 'Moods',
-        fields: [nameField]
-    },
+export const AdminConfig: Record<string, EntityConfig> = {
+    CopingMechanism: { endpoint: 'coping-mechanisms', label: 'Coping Mechanisms', fields: [nameField] },
+    Trigger: { endpoint: 'triggers', label: 'Triggers', fields: [nameField] },
+    Mood: { endpoint: 'moods', label: 'Moods', fields: [nameField] },
     Symptom: {
         endpoint: 'symptoms',
         label: 'Symptoms',
@@ -54,20 +42,9 @@ export const ENTITY_CONFIGS: Record<string, EntityConfig> = {
             { name: 'symptoms', label: 'Associated Symptoms', type: 'multi-select', endpoint: 'symptoms' }
         ]
     },
-    Diagnosis: {
-        endpoint: 'diagnoses',
-        label: 'Diagnoses',
-        fields: [
-            { name: 'condition', label: 'Condition', type: 'select', endpoint: 'conditions', required: true },
-            { name: 'symptoms', label: 'Confirming Symptoms', type: 'multi-select', endpoint: 'symptoms' }
-        ]
-    },
-    DialogueNode: {
-        endpoint: 'dialogue-nodes',
-        label: 'Dialogue Nodes',
-        fields: [
-            { name: 'botText', label: 'Bot Message (What the patient says)', type: 'text', required: true },
-            { name: 'therapistChoices', label: 'Therapist Choices', type: 'choice-list', endpoint: 'dialogue-nodes' }
-        ]
+    Scenario: {
+        endpoint: 'scenarios',
+        label: 'Scenarios',
+        fields: []
     }
 };

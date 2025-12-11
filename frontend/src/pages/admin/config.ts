@@ -42,13 +42,6 @@ export const AdminConfig: Record<string, EntityConfig> = {
             { name: 'symptoms', label: 'Associated Symptoms', type: 'multi-select', endpoint: 'symptoms' }
         ]
     },
-    Diagnosis: {
-        endpoint: 'diagnoses',
-        label: 'Diagnoses',
-        fields: [
-            { name: 'condition', label: 'Condition', type: 'select', endpoint: 'conditions', required: true }
-        ]
-    },
     Scenario: {
         endpoint: 'scenarios',
         label: 'Scenarios',

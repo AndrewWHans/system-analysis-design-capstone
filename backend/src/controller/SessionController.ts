@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { TherapySessionService } from "../service/TherapySessionService";
+import { BadRequestError } from "../utils/AppError";
 
 export class SessionController {
     constructor(private sessionService: TherapySessionService) {}
@@ -38,9 +39,13 @@ export class SessionController {
 
     submitDiagnosis = async (req: Request, res: Response) => {
         const sessionId = Number(req.params.id);
-        const { diagnosisId } = req.body;
+        const { conditionId } = req.body;
         
-        const result = await this.sessionService.submitDiagnosis(sessionId, Number(diagnosisId));
+        if (!conditionId) {
+            throw new BadRequestError("conditionId is required");
+        }
+
+        const result = await this.sessionService.submitDiagnosis(sessionId, Number(conditionId));
         res.json(result);
     }
 }

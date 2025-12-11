@@ -11,7 +11,6 @@ const triggerCtrl = new BaseController(services.trigger);
 const moodCtrl = new BaseController(services.mood);
 const symptomCtrl = new BaseController(services.symptom);
 const conditionCtrl = new BaseController(services.condition);
-const diagnosisCtrl = new BaseController(services.diagnosis);
 
 // Custom scenario handler
 router.get("/scenarios", catchAsync(async (req, res) => {
@@ -21,10 +20,6 @@ router.get("/scenarios", catchAsync(async (req, res) => {
 
 router.get("/scenarios/:id", catchAsync(async (req, res) => {
     const scenario = await services.scenario.getScenarioByID(Number(req.params.id));
-    // We need to fetch the full graph for the frontend
-    // Ideally, we'd have a specific "getGraph" service method, but for now 
-    // the frontend will lazy-load nodes or we assume the Scenario Builder fetches nodes separately.
-    // For simplicity: We will fetch just the scenario metadata here.
     res.json(scenario);
 }));
 
@@ -49,7 +44,6 @@ registerCrud("/triggers", triggerCtrl);
 registerCrud("/moods", moodCtrl);
 registerCrud("/symptoms", symptomCtrl);
 registerCrud("/conditions", conditionCtrl);
-registerCrud("/diagnoses", diagnosisCtrl);
 
 // Helper to register standard CRUD routes
 function registerCrud(path: string, controller: BaseController<any>) {

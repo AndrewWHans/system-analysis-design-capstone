@@ -9,7 +9,7 @@ export class TherapySessionRepository extends BaseRepository<TherapySessionEntit
     async findByTherapistID(therapistID: number): Promise<TherapySessionEntity[]> {
         return await this.repo.find({ 
             where: { therapistID },
-            relations: ["scenario", "finalDiagnosis", "finalDiagnosis.condition"],
+            relations: ["scenario", "finalDiagnosis"],
             order: { startTime: "DESC" }
         });
     }
