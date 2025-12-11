@@ -1,79 +1,108 @@
-<div class="flex h-screen bg-white dark:bg-gray-950 font-sans overflow-hidden transition-colors duration-300">
+<div class="flex h-screen bg-gray-50 dark:bg-gray-950 font-sans overflow-hidden transition-colors duration-300">
+    
     <!-- Sidebar -->
-    <aside class="w-64 bg-gray-50 dark:bg-gray-900 h-screen border-r border-gray-200 dark:border-gray-800 flex flex-col p-6 hidden md:flex font-sans z-10">
-        <div class="flex justify-between items-start mb-10">
-            <div class="flex-shrink-0 flex items-center gap-2 cursor-pointer group" id="nav-logo">
-                <div class="w-8 h-8 bg-black dark:bg-white rounded-lg flex items-center justify-center text-white dark:text-black group-hover:scale-105 transition">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
+    <aside class="w-72 bg-white dark:bg-gray-900 h-screen border-r border-gray-200 dark:border-gray-800 flex flex-col hidden md:flex font-sans z-20 shadow-sm relative">
+        <!-- Sidebar Header -->
+        <div class="p-6 pb-2">
+            <div class="flex items-center gap-3 cursor-pointer group mb-8" id="nav-logo">
+                <div class="w-10 h-10 bg-gradient-to-br from-[#5B3E86] to-[#7c5fb0] rounded-xl flex items-center justify-center text-white shadow-lg shadow-purple-500/20 group-hover:scale-105 transition-transform duration-300">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
                 </div>
-                <span class="font-bold text-xl tracking-tight text-gray-900 dark:text-white">Therabot</span>
+                <div>
+                    <span class="font-bold text-xl tracking-tight text-gray-900 dark:text-white block leading-none">Therabot</span>
+                </div>
             </div>
+
+            <button id="nav-new-chat" class="w-full text-left px-4 py-3 rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold hover:opacity-90 active:scale-95 cursor-pointer transition shadow-md flex items-center justify-center gap-2 mb-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                Start New Session
+            </button>
         </div>
         
-        <nav class="space-y-2 mb-10">
-            <button id="nav-new-chat" class="w-full text-left px-4 py-2 rounded-lg bg-[#5B3E86] text-white font-medium hover:bg-[#4a326c] cursor-pointer transition shadow-md flex items-center gap-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                New Session
+        <!-- Navigation Links -->
+        <nav class="px-4 space-y-1 mb-6">
+            <button id="nav-home" class="w-full text-left px-4 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white cursor-pointer transition flex items-center gap-3 text-sm font-medium">
+                <svg class="w-5 h-5 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                Home
             </button>
-            <button id="nav-home" class="w-full text-left px-4 py-2 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800 cursor-pointer transition">
-                Back to Home
-            </button>
-            <button id="nav-admin" class="hidden w-full text-left px-4 py-2 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-gray-800 cursor-pointer transition">
-                Admin Panel
+            <button id="nav-admin" class="hidden w-full text-left px-4 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 cursor-pointer transition flex items-center gap-3 text-sm font-medium group">
+                <svg class="w-5 h-5 opacity-70 group-hover:text-red-600 dark:group-hover:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                Admin Config
             </button>
         </nav>
 
         <!-- History Section -->
-        <div class="flex-1 overflow-y-auto mb-6">
-            <div id="btn-view-profile" class="flex items-center justify-between mb-4 group cursor-pointer" title="View Full History in Profile">
-                <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider group-hover:text-[#5B3E86] dark:group-hover:text-[#a78bfa] transition">Previous Sessions</h3>
-                <svg class="w-4 h-4 text-gray-400 group-hover:text-[#5B3E86] dark:group-hover:text-[#a78bfa] transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
-                </svg>
+        <div class="flex-1 overflow-y-auto px-4 pb-2 custom-scrollbar">
+            <div id="btn-view-profile" class="flex items-center justify-between mb-4 mt-2 px-2 group cursor-pointer">
+                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider group-hover:text-[#5B3E86] dark:group-hover:text-[#a78bfa] transition">Recent History</h3>
+                <span class="text-[10px] bg-gray-100 dark:bg-gray-800 text-gray-500 px-2 py-0.5 rounded-full group-hover:bg-[#5B3E86] group-hover:text-white transition">View All</span>
             </div>
             <div id="session-history-list" class="space-y-1">
                 <!-- History Items Injected Here -->
-                <div class="text-sm text-gray-400 pl-2">Loading history...</div>
+                <div class="text-sm text-gray-400 text-center py-4 italic">Loading history...</div>
             </div>
         </div>
 
-        <div class="mt-auto">
-            <theme-toggle></theme-toggle>
+        <div class="p-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-black/20">
+            <div class="flex justify-between items-center">
+                <theme-toggle></theme-toggle>
+                <span class="text-[10px] text-gray-400">v1.0.0</span>
+            </div>
         </div>
     </aside>
 
     <!-- Main Content -->
-    <main class="flex-1 flex flex-col relative h-full">
+    <main class="flex-1 flex flex-col relative h-full bg-white/50 dark:bg-gray-950/50 backdrop-blur-sm">
+        
         <!-- Header -->
-        <header class="h-16 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between px-6 bg-white dark:bg-gray-900 z-10 shrink-0">
-            <h1 id="session-title" class="text-lg font-bold text-gray-800 dark:text-white">Select a Scenario</h1>
+        <header class="h-16 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-6 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md sticky top-0 z-30">
+            <div class="flex items-center gap-3 overflow-hidden">
+                <!-- Mobile Menu Button (Hidden on Desktop) -->
+                <button class="md:hidden text-gray-500">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                </button>
+                <div id="session-header-content" class="flex flex-col">
+                    <h1 id="session-title" class="text-lg font-bold text-gray-900 dark:text-white truncate">Select a Scenario</h1>
+                    <span id="session-subtitle" class="text-xs text-gray-500 dark:text-gray-400 hidden md:block">Choose a patient to begin your diagnosis</span>
+                </div>
+            </div>
             <div id="auth-buttons-container"></div>
         </header>
 
         <!-- Scenario Selection View (Default) -->
-        <div id="scenario-selector" class="flex-1 overflow-y-auto p-8">
-            <div class="max-w-4xl mx-auto">
-                <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Available Scenarios</h2>
+        <div id="scenario-selector" class="flex-1 overflow-y-auto p-6 md:p-10 fade-in">
+            <div class="max-w-6xl mx-auto">
+                <div class="mb-8">
+                    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Patient Scenarios</h2>
+                    <p class="text-gray-500 dark:text-gray-400">Select a simulation scenario to practice your diagnostic interviewing skills.</p>
+                </div>
                 <div id="scenario-list" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <div class="text-center text-gray-500 col-span-full">Loading scenarios...</div>
+                    <div class="col-span-full py-20 flex flex-col items-center justify-center text-gray-400">
+                        <svg class="w-12 h-12 mb-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        Loading available scenarios...
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- Chat View (Hidden initially) -->
-        <div id="chat-interface" class="hidden flex-1 flex flex-col h-full overflow-hidden">
+        <div id="chat-interface" class="hidden flex-1 flex flex-col h-full overflow-hidden relative">
+            <!-- Background Pattern -->
+            <div class="absolute inset-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none" style="background-image: url(&quot;data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E&quot;);"></div>
+
             <!-- Messages Area -->
-            <div id="messages-container" class="flex-1 overflow-y-auto p-6 space-y-6 scroll-smooth bg-gray-50 dark:bg-gray-950">
+            <div id="messages-container" class="flex-1 overflow-y-auto px-4 py-8 md:px-20 space-y-8 scroll-smooth z-10">
+                <!-- Messages injected here -->
             </div>
 
-            <!-- Controls Area -->
-            <div class="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 p-6 shrink-0 z-20">
+            <!-- Controls Area (Sticky Bottom) -->
+            <div class="border-t border-gray-200 dark:border-gray-800 bg-white/90 dark:bg-gray-900/90 backdrop-blur-lg p-6 shrink-0 z-20 shadow-[0_-5px_20px_-5px_rgba(0,0,0,0.05)]">
                 <div class="max-w-4xl mx-auto">
-                    <div id="choices-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div id="choices-container" class="flex flex-wrap gap-3 justify-center">
                     </div>
-                    <div id="end-session-msg" class="hidden text-center">
-                        <p class="text-lg text-gray-600 dark:text-gray-300 mb-4">Session Ended.</p>
-                        <button id="btn-restart" class="bg-black dark:bg-white text-white dark:text-black px-6 py-2 rounded-full font-medium hover:opacity-90">Return to Menu</button>
+                    
+                    <div id="end-session-msg" class="hidden text-center animate-fade-in-up">
+                        <!-- Diagnosis or End Screen Injected Here -->
                     </div>
                 </div>
             </div>

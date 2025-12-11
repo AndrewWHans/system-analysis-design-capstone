@@ -31,23 +31,30 @@ export const setupProfilePage = (navigate: (path: string) => void) => {
         if (sessions.length > 0) {
             tbody.innerHTML = sessions.map((s: any) => {
                 const status = s.endTime 
-                    ? '<span class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">Completed</span>'
-                    : '<span class="inline-flex items-center rounded-md bg-yellow-50 px-2 py-1 text-xs font-medium text-yellow-800 ring-1 ring-inset ring-yellow-600/20">Active</span>';
+                    ? '<span class="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-800 px-2.5 py-0.5 text-xs font-medium text-gray-800 dark:text-gray-300">Completed</span>'
+                    : '<span class="inline-flex items-center rounded-full bg-yellow-100 dark:bg-yellow-900/30 px-2.5 py-0.5 text-xs font-medium text-yellow-800 dark:text-yellow-400 animate-pulse">In Progress</span>';
                 
-                let diagStatus = '<span class="text-gray-400">-</span>';
+                let diagStatus = '<span class="text-gray-400 text-xs italic">Pending</span>';
                 if (s.finalDiagnosis) {
                     if (s.isDiagnosisCorrect) {
-                        diagStatus = `<span class="text-green-600 font-medium">Correct (${s.finalDiagnosis.condition?.name})</span>`;
+                        diagStatus = `
+                            <div class="flex items-center justify-end gap-2">
+                                <span class="text-gray-600 dark:text-gray-400 text-sm">${s.finalDiagnosis.condition?.name}</span>
+                                <span class="inline-flex items-center rounded-full bg-green-100 dark:bg-green-900/30 px-2.5 py-0.5 text-xs font-medium text-green-700 dark:text-green-400">Correct</span>
+                            </div>`;
                     } else {
-                        diagStatus = `<span class="text-red-500 font-medium">Incorrect (${s.finalDiagnosis.condition?.name})</span>`;
+                        diagStatus = `
+                            <div class="flex items-center justify-end gap-2">
+                                <span class="text-gray-600 dark:text-gray-400 text-sm">${s.finalDiagnosis.condition?.name}</span>
+                                <span class="inline-flex items-center rounded-full bg-red-100 dark:bg-red-900/30 px-2.5 py-0.5 text-xs font-medium text-red-700 dark:text-red-400">Incorrect</span>
+                            </div>`;
                     }
                 }
 
-                // Added cursor-pointer and data-id attribute
                 return `
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-800 transition cursor-pointer session-row" data-id="${s.id}">
-                        <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 dark:text-white sm:pl-6">${formatDate(s.startTime)}</td>
-                        <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-gray-300">${s.scenario?.name || "Unknown Scenario"}</td>
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-800 transition cursor-pointer session-row group" data-id="${s.id}">
+                        <td class="whitespace-nowrap py-4 pl-6 pr-3 text-sm font-medium text-gray-900 dark:text-white group-hover:text-[#5B3E86] transition">${formatDate(s.startTime)}</td>
+                        <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-600 dark:text-gray-300 font-medium">${s.scenario?.name || "Unknown Scenario"}</td>
                         <td class="whitespace-nowrap px-3 py-4 text-sm">${status}</td>
                         <td class="whitespace-nowrap px-3 py-4 text-sm text-right pr-6">${diagStatus}</td>
                     </tr>
@@ -65,7 +72,7 @@ export const setupProfilePage = (navigate: (path: string) => void) => {
             });
 
         } else {
-            tbody.innerHTML = `<tr><td colspan="4" class="py-10 text-center text-sm text-gray-500 dark:text-gray-400 italic">No sessions found.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="4" class="py-10 text-center text-sm text-gray-500 dark:text-gray-400 italic">No sessions found. Start a new chat to see data here.</td></tr>`;
         }
     };
 
@@ -86,7 +93,7 @@ export const setupProfilePage = (navigate: (path: string) => void) => {
                 document.getElementById('stat-total')!.textContent = stats.totalStarted.toString();
                 document.getElementById('stat-completed')!.textContent = stats.totalCompleted.toString();
                 document.getElementById('stat-correct')!.textContent = stats.correctDiagnoses.toString();
-                document.getElementById('stat-attempts')!.textContent = `Out of ${stats.totalDiagnoses} attempts`;
+                document.getElementById('stat-attempts')!.textContent = `of ${stats.totalDiagnoses}`;
                 document.getElementById('stat-accuracy')!.textContent = `${stats.accuracy}%`;
             }
 
