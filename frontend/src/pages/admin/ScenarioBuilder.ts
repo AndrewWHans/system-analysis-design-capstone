@@ -93,6 +93,7 @@ export class ScenarioBuilder {
                                 <li><span class="font-bold">Green Node</span> is the Root (Start).</li>
                                 <li>Connect <span class="font-bold">Grey Dot</span> (Output) to <span class="font-bold">Blue Dot</span> (Input).</li>
                                 <li>Drag canvas to pan, ctrl + scroll to zoom.</li>
+                                <li>One choice connects to <span class="font-bold">one</span> node.</li>
                             </ul>
                         </div>
                     </div>
@@ -122,6 +123,30 @@ export class ScenarioBuilder {
         this.editor.zoom_max = 3;
         this.editor.zoom_min = 0.3;
         this.editor.start();
+
+        // Enforce 1-to-1 connections per output
+        this.editor.on('connectionCreated', (info: any) => {
+            const { output_id, input_id, output_class, input_class } = info;
+            const node = this.editor.getNodeFromId(output_id);
+            const connections = node.outputs[output_class].connections;
+            
+            // If more than 1 connection exists on this output, remove the older ones
+            if (connections.length > 1) {
+                // Connections array usually pushes new ones to the end. 
+                // We remove the one that isn't the new target input_id
+                // But Drawflow structure is { node: input_id, output: input_class }
+                
+                // Find the connection that matches the NEW connection (so we keep it)
+                // Filter out everything else
+                const others = connections.filter((conn: any) => 
+                    !(conn.node == input_id && conn.output == input_class)
+                );
+
+                others.forEach((conn: any) => {
+                     this.editor.removeSingleConnection(output_id, conn.node, output_class, conn.output);
+                });
+            }
+        });
 
         // --- GRAPH REBUILDING LOGIC ---
         if (id && scenarioData?.nodes) {
@@ -154,10 +179,19 @@ export class ScenarioBuilder {
                     const outputName = `output_${index + 1}`;
 
                     const row = document.createElement('div');
-                    row.className = "flex items-center h-[38px]"; 
-                    row.innerHTML = `<input type="text" class="w-full text-xs px-3 py-2 h-full border border-gray-200 dark:border-gray-700 rounded-lg dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-[#5B3E86] transition shadow-sm" value="${choice.text}" data-output="${outputName}">`;
+                    row.className = "flex items-center h-[38px] gap-1 mb-1"; 
+                    row.innerHTML = `
+                        <input type="text" class="flex-1 min-w-0 text-xs px-3 py-2 h-full border border-gray-200 dark:border-gray-700 rounded-lg dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-[#5B3E86] transition shadow-sm" value="${choice.text}" data-output="${outputName}">
+                        <button class="remove-choice-btn w-[30px] h-[30px] flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition" title="Remove Choice">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    `;
+                    
                     choiceList.appendChild(row);
                     row.querySelector('input')!.addEventListener('mousedown', (e) => e.stopPropagation());
+                    row.querySelector('.remove-choice-btn')!.addEventListener('click', () => {
+                        this.removeChoice(sourceDfId, outputName, row);
+                    });
 
                     if (targetDfId) {
                         this.editor.addConnection(sourceDfId, targetDfId, outputName, "input_1");
@@ -172,6 +206,18 @@ export class ScenarioBuilder {
 
         this.setupEvents();
         this.setupCustomPanning(id_div);
+    }
+
+    private removeChoice(nodeId: number, outputName: string, row: HTMLElement) {
+        // 1. Remove the connection/output from Drawflow
+        this.editor.removeNodeOutput(nodeId, outputName);
+        
+        // 2. Remove the UI row
+        row.remove();
+
+        // Note: We do NOT shift subsequent output keys (e.g., output_3 -> output_2)
+        // because Drawflow relies on unique keys. 'saveGraph' iterates DOM elements
+        // and reads their data-output attribute, which remains valid.
     }
 
     private setupCustomPanning(container: HTMLElement) {
@@ -304,11 +350,19 @@ export class ScenarioBuilder {
                     this.editor.addNodeOutput(nodeId);
                     
                     const row = document.createElement('div');
-                    row.className = "flex items-center h-[38px] animate-fade-in-up"; 
-                    row.innerHTML = `<input type="text" class="w-full text-xs px-3 py-2 h-full border border-gray-200 dark:border-gray-700 rounded-lg dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-[#5B3E86] transition shadow-sm" placeholder="Therapist choice..." data-output="${outputName}">`;
+                    row.className = "flex items-center h-[38px] gap-1 animate-fade-in-up mb-1"; 
+                    row.innerHTML = `
+                        <input type="text" class="flex-1 min-w-0 text-xs px-3 py-2 h-full border border-gray-200 dark:border-gray-700 rounded-lg dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-[#5B3E86] transition shadow-sm" placeholder="Therapist choice..." data-output="${outputName}">
+                        <button class="remove-choice-btn w-[30px] h-[30px] flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition" title="Remove Choice">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    `;
                     
                     choiceList.appendChild(row);
                     row.querySelector('input')!.addEventListener('mousedown', (e) => e.stopPropagation());
+                    row.querySelector('.remove-choice-btn')!.addEventListener('click', () => {
+                        this.removeChoice(nodeId, outputName, row);
+                    });
                 });
             }
         }, 0);

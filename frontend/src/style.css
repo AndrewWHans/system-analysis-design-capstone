@@ -151,10 +151,10 @@
 .drawflow .drawflow-node .outputs {
     position: absolute !important;
     right: -10px !important;
-    top: 179px !important; 
+    top: 193px !important; 
     display: flex !important;
     flex-direction: column !important;
-    gap: 8px !important;
+    gap: 12px !important;
     z-index: 10;
 }
 .drawflow .drawflow-node .output {
