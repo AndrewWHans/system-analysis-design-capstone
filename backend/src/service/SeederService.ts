@@ -10,7 +10,7 @@ import { TherapistChoiceEntity } from "../entity/TherapistChoiceEntity";
 import { AppDataSource } from "../data-source"; // Import DataSource for clearing tables
 
 // --- Visual Layout Constants ---
-const COL_WIDTH = 1000;
+const COL_WIDTH = 2400;
 const ROW_HEIGHT = 500;
 
 /**
