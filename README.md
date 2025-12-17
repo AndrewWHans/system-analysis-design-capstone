@@ -79,7 +79,7 @@ cd system-analysis-design-capstone
 
 ## Docker Setup
 
-This project is containerized using Docker, which sets up the Database (MySQL), Backend (Node/Express), and Frontend (Vite/React) automatically.
+This project is containerized using Docker, which sets up the Database (MySQL), Backend (Node/Express), and Frontend (Vite) automatically.
 
 ### How to Build and Run the Containers
 
@@ -105,7 +105,7 @@ Once the containers are running, you can access the system via your web browser:
 
 ## Default Admin User Credentials
 
-The application automatically creates an Admin account upon the first successful database connection. You can use these credentials to log in and access the Admin Dashboard:
+The application automatically creates an admin account upon the first successful database connection. You can use these credentials to log in and access the admin dashboard:
 
 *   **Username:** `admin`
 *   **Password:** `admin`
@@ -136,6 +136,11 @@ docker volume rm system-analysis-design-capstone_db_data
 # 3. Prune unused volumes to free space
 docker volume prune -f
 ```
+
+---
+
+### Creating Additional Default Data
+If you want to create additional default data that gets created in the database once the docker container starts go to `backend/src/service/SeederService.ts` and add whatever data you want. There are examples of how to do this in the SeederService file as well.
 
 ---
 
