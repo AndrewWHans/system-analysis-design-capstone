@@ -662,7 +662,7 @@ export class SeederService {
             3,
             "Part of me thinks, ‘This is just what being successful feels like—constant pressure.’ Another part of me wonders if I’m actually falling apart."
         );
-        const nStress_Hopeless = await builder.addDialogue(
+        const nStress_Hopeless = await builder.addEnd(
             2.5,
             4,
             "Sometimes I think, ‘If I just quit and moved somewhere no one knows me, maybe I could finally breathe.’ I don’t *want* to die, I just want everything to stop for a while."
@@ -691,7 +691,7 @@ export class SeederService {
 
         // --- PHASE 2D: MEDS-FIRST BRANCH (Col 2) ---
 
-        const nMeds_Explore = await builder.addDialogue(
+        const nMeds_Explore = await builder.addEnd(
             2.5,
             6,
             "If meds can quiet my brain, I’m open. I just don’t want to become a zombie. I still want to care, just… less catastrophizing."
