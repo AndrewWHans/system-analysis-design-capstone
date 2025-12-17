@@ -7,7 +7,7 @@ import { ConditionEntity } from "../entity/ConditionEntity";
 import { ScenarioEntity } from "../entity/ScenarioEntity";
 import { DialogueNodeEntity, NodeType } from "../entity/DialogueNodeEntity";
 import { TherapistChoiceEntity } from "../entity/TherapistChoiceEntity";
-import { AppDataSource } from "../data-source"; // Import DataSource for clearing tables
+import { AppDataSource } from "../data-source";
 
 // --- Visual Layout Constants ---
 const COL_WIDTH = 2400;
@@ -229,7 +229,7 @@ export class SeederService {
                 name: "Psychomotor Agitation", severity: 7, frequency: 4, duration: 2, lifeImpact: 6,
                 triggers: ["Anxious", "Work Stress", "Caffeine Overload"],
                 moods: ["Restless", "Irritable", "Anxious"],
-                coping: ["Exercise", "Nail Biting", "Pacing"] // Pacing assumed implied
+                coping: ["Exercise", "Nail Biting", "Pacing"]
             },
             {
                 name: "Insomnia", severity: 7, frequency: 5, duration: 4, lifeImpact: 8,
