@@ -560,7 +560,8 @@ export class ScenarioBuilder {
             </div>
         `;
         
-        const nodeId = this.editor.addNode(type, 1, 0, x, y, `node-${type}`, {}, html);
+        const inputsCount = isRoot ? 0 : 1;
+        const nodeId = this.editor.addNode(type, inputsCount, 0, x, y, `node-${type}`, {}, html);
         
         setTimeout(() => {
              const nodeEl = document.getElementById(`node-${nodeId}`);
