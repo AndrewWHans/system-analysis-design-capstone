@@ -17,7 +17,7 @@ export const setupHomePage = (navigate: (path: string) => void) => {
       `;
     } else {
       navContainer.innerHTML = `
-        <button id="nav-login" class="text-gray-600 dark:text-gray-300 font-medium hover:text-black dark:hover:text-white transition">Login</button>
+        <button id="nav-login" class="text-gray-600 dark:text-gray-300 font-medium hover:text-black dark:hover:text-white cursor-pointer transition">Login</button>
         <button id="nav-register" class="bg-black dark:bg-white text-white dark:text-black px-5 py-2 rounded-full font-medium hover:bg-gray-800 dark:hover:bg-gray-200 cursor-pointer transition">Sign Up</button>
       `;
     }
