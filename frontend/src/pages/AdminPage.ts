@@ -107,9 +107,22 @@ export const setupAdminPage = (navigate: (path: string) => void) => {
     const loadStandardForm = (id: number | null) => {
         createBtn.style.display = 'none';
         contentDiv.innerHTML = `<div class="text-center py-10 text-gray-500">Loading Form...</div>`;
+        
         new AdminForm(contentDiv, AdminConfig[currentType], async (data) => {
-            if ((await AdminApi.save(AdminConfig[currentType].endpoint, data, id)).ok) loadList();
-            else alert('Error saving');
+            try {
+                const response = await AdminApi.save(AdminConfig[currentType].endpoint, data, id);
+                
+                if (response.ok) {
+                    loadList();
+                } else {
+                    // Parse error response
+                    const errorData = await response.json();
+                    alert(`Error: ${errorData.message || 'Failed to save record'}`);
+                }
+            } catch (e) {
+                console.error(e);
+                alert('A network or server error occurred.');
+            }
         }, loadList).render(id);
     };
 
