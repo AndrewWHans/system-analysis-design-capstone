@@ -537,8 +537,8 @@ export class SeederService {
         await builder.connect(suHistoryAnxiety, suHistoryRapport, "");
         await builder.connect(suHistoryRapport, nWarmHistoryDetail, "");
 
-        // Choices from nWarmSomaticDetail (stay somatic vs broaden vs minimize)
-        const nWarmSomatic_Broaden = await builder.addDialogue(
+        // Choices from nWarmSomaticDetail
+        const nWarmSomatic_Broaden = await builder.addEnd(
             5.5,
             0.5,
             "It’s not just my body freaking out. I lie in bed thinking through every little thing that could go wrong the next day."
