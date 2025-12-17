@@ -248,38 +248,99 @@ export class ScenarioService {
     private validateGraphConnectivity(nodes: GraphNode[]) {
         if (!nodes || nodes.length === 0) throw new BadRequestError("Scenario must have at least one node.");
 
-        const root = nodes.find(n => n.isRoot);
-        const endNodes = nodes.filter(n => n.isEndNode || n.type === 'end'); // Check type too
+        const nodeMap = new Map<string, GraphNode>();
+        const endNodeIds = new Set<string>();
+        let rootId: string | null = null;
 
-        if (!root) throw new BadRequestError("Scenario must have a Start Node (Root).");
-        if (endNodes.length === 0) throw new BadRequestError("Scenario must have at least one End Node.");
-
-        // BFS to find all reachable nodes from Root
-        const adjList = new Map<string, string[]>();
+        // Index nodes and identify root / end nodes
         nodes.forEach(n => {
-            const targets = (n.choices || [])
-                .map(c => c.targetNodeId)
-                .filter(id => id);
-            adjList.set(n.id, targets);
+            nodeMap.set(n.id, n);
+            if (n.isRoot) rootId = n.id;
+            // A node is an end node if flag is set OR type is 'end'
+            if (n.isEndNode || n.type === 'end') endNodeIds.add(n.id);
         });
 
-        const visited = new Set<string>();
-        const queue: string[] = [root.id];
+        if (!rootId) throw new BadRequestError("Scenario must have a Start Node (Root).");
+        if (endNodeIds.size === 0) throw new BadRequestError("Scenario must have at least one End Node.");
 
-        while (queue.length > 0) {
-            const currentId = queue.shift()!;
-            if (visited.has(currentId)) continue;
-            visited.add(currentId);
+        // Build adjacency lists (forward and reverse)
+        const forwardAdj = new Map<string, string[]>();
+        const reverseAdj = new Map<string, string[]>();
 
-            const neighbors = adjList.get(currentId) || [];
-            neighbors.forEach(nId => queue.push(nId));
+        // Initialize maps
+        nodes.forEach(n => {
+            forwardAdj.set(n.id, [] as string[]);
+            reverseAdj.set(n.id, [] as string[]);
+        });
+
+        // Populate edges
+        nodes.forEach(source => {
+            const targets = (source.choices || [])
+                .map(c => c.targetNodeId)
+                .filter(id => nodeMap.has(id)); 
+
+            targets.forEach(targetId => {
+                forwardAdj.get(source.id)?.push(targetId);
+                reverseAdj.get(targetId)?.push(source.id);
+            });
+        });
+
+        // Forward BFS: Find all nodes reachable from Root
+        const reachableFromRoot = new Set<string>();
+        const queueForward: string[] = [rootId];
+        reachableFromRoot.add(rootId);
+
+        while (queueForward.length > 0) {
+            const curr = queueForward.shift()!;
+            const neighbors = forwardAdj.get(curr) || [];
+            
+            for (const next of neighbors) {
+                if (!reachableFromRoot.has(next)) {
+                    reachableFromRoot.add(next);
+                    queueForward.push(next);
+                }
+            }
         }
 
-        // Validate that *all* defined End Nodes are reachable
-        const unreachableEndNodes = endNodes.filter(en => !visited.has(en.id));
+        // Backward BFS: Find all nodes that can reach ANY End Node
+        const canReachEnd = new Set<string>();
+        const queueBackward: string[] = Array.from(endNodeIds);
+        
+        // Add all end nodes initially
+        queueBackward.forEach(id => canReachEnd.add(id));
 
-        if (unreachableEndNodes.length > 0) {
-            throw new BadRequestError(`Graph Error: ${unreachableEndNodes.length} End Node(s) are not reachable from the Start Node.`);
+        while (queueBackward.length > 0) {
+            const curr = queueBackward.shift()!;
+            const parents = reverseAdj.get(curr) || [];
+
+            for (const prev of parents) {
+                if (!canReachEnd.has(prev)) {
+                    canReachEnd.add(prev);
+                    queueBackward.push(prev);
+                }
+            }
+        }
+
+        // Validation: Every node reachable from root MUST be able to reach an end node.
+        const stuckNodes: string[] = [];
+
+        reachableFromRoot.forEach(nodeId => {
+            if (!canReachEnd.has(nodeId)) {
+                // This node is reachable by the player, but the player can never exit from here.
+                const nodeLabel = nodeMap.get(nodeId)?.botText || "Unknown Node";
+                const cleanLabel = nodeLabel.length > 20 ? nodeLabel.substring(0, 20) + "..." : nodeLabel;
+                stuckNodes.push(`"${cleanLabel}"`);
+            }
+        });
+
+        if (stuckNodes.length > 0) {
+            // Cap the error message length
+            const displayList = stuckNodes.slice(0, 3).join(", ");
+            const more = stuckNodes.length > 3 ? ` and ${stuckNodes.length - 3} others` : "";
+            
+            throw new BadRequestError(
+                `Invalid Graph: The following reachable nodes have no path to an End Node (Dead End or Infinite Loop): ${displayList}${more}.`
+            );
         }
     }
 }
