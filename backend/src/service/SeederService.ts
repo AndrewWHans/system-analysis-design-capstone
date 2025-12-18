@@ -9,26 +9,29 @@ import { DialogueNodeEntity, NodeType } from "../entity/DialogueNodeEntity";
 import { TherapistChoiceEntity } from "../entity/TherapistChoiceEntity";
 import { AppDataSource } from "../data-source";
 
-// --- Visual Layout Constants ---
-const COL_WIDTH = 2400;
-const ROW_HEIGHT = 500;
-
 /**
  * Helper class to build scenarios programmatically with a grid-based visual layout.
+ * Layout dimensions can be customized per instance.
  */
 class ScenarioBuilderHelper {
     private scenario: ScenarioEntity;
     private nodeRepo: BaseRepository<DialogueNodeEntity>;
     private choiceRepo: BaseRepository<TherapistChoiceEntity>;
+    private colWidth: number;
+    private rowHeight: number;
 
     constructor(
         scenario: ScenarioEntity,
         nodeRepo: BaseRepository<DialogueNodeEntity>,
-        choiceRepo: BaseRepository<TherapistChoiceEntity>
+        choiceRepo: BaseRepository<TherapistChoiceEntity>,
+        colWidth: number = 2400, // Default width if not specified
+        rowHeight: number = 500  // Default height if not specified
     ) {
         this.scenario = scenario;
         this.nodeRepo = nodeRepo;
         this.choiceRepo = choiceRepo;
+        this.colWidth = colWidth;
+        this.rowHeight = rowHeight;
     }
 
     /**
@@ -40,8 +43,8 @@ class ScenarioBuilderHelper {
             type: type,
             botText: text,
             metadata: metadata,
-            uiX: col * COL_WIDTH,
-            uiY: row * ROW_HEIGHT,
+            uiX: col * this.colWidth,
+            uiY: row * this.rowHeight,
             isEndNode: type === NodeType.END
         }));
     }
@@ -107,13 +110,25 @@ export class SeederService {
         const conditionMap = await this.seedClinicalData();
 
         console.log("Seeding Scenario 1: The Overwhelmed Architect...");
-
         const gad = conditionMap.get("Generalized Anxiety Disorder");
         if (!gad) {
             throw new Error("Condition 'Generalized Anxiety Disorder' not found in conditionMap");
         }
-
         await this.createAnxietyScenario(gad);
+
+        console.log("Seeding Scenario 2: The Late-Night Coder...");
+        const bipolar = conditionMap.get("Bipolar II Disorder");
+        if (!bipolar) {
+            throw new Error("Condition 'Bipolar II Disorder' not found in conditionMap");
+        }
+        await this.createBipolarScenario(bipolar);
+
+        console.log("Seeding Scenario 3: The Silenced Singer...");
+        const sad = conditionMap.get("Social Anxiety Disorder");
+        if (!sad) {
+            throw new Error("Condition 'Social Anxiety Disorder' not found in conditionMap");
+        }
+        await this.createSocialAnxietyScenario(sad);
 
         console.log("Seeding complete.");
     }
@@ -220,6 +235,26 @@ export class SeederService {
 
         const symptomsData = [
             {
+                name: "Impulsivity / Risk-taking", 
+                severity: 7, 
+                frequency: 3, 
+                duration: 2, 
+                lifeImpact: 8,
+                triggers: ["Sleep Deprivation", "Major Life Transition", "Grandioise"], 
+                moods: ["Euphoric", "Elated", "Agitated"],
+                coping: ["Compulsive Shopping", "Substance Use", "Speeding/Reckless Driving"]
+            },
+            {
+                name: "Reduced Need for Sleep",
+                severity: 6,
+                frequency: 2,
+                duration: 3,
+                lifeImpact: 5,
+                triggers: ["Major Life Transition", "Seasonal Changes"],
+                moods: ["Euphoric", "Restless", "Hyperactive"],
+                coping: ["Procrastination", "Art Therapy", "Cleaning"]
+            },
+            {
                 name: "Anhedonia", severity: 8, frequency: 5, duration: 4, lifeImpact: 9,
                 triggers: ["Perceived Failure", "Loneliness", "Chronic Pain"],
                 moods: ["Apathetic", "Numb", "Empty"],
@@ -323,6 +358,7 @@ export class SeederService {
             { name: "Generalized Anxiety Disorder", symptoms: ["Panic Attacks", "Insomnia", "Psychomotor Agitation", "Muscle Tension", "GI Disturbances", "Obsessive Thoughts"] },
             { name: "Post-Traumatic Stress Disorder", symptoms: ["Hypervigilance", "Flashbacks", "Anhedonia", "Insomnia", "Avoidance"] },
             { name: "Bipolar I Disorder", symptoms: ["Grandiosity", "Fatigue/Low Energy", "Psychomotor Agitation", "Risk-taking"] },
+            { name: "Bipolar II Disorder", symptoms: ["Anhedonia", "Fatigue/Low Energy", "Grandiosity", "Reduced Need for Sleep", "Impulsivity / Risk-taking", "Difficulty Concentrating"] },
             { name: "Obsessive-Compulsive Disorder", symptoms: ["Obsessive Thoughts", "Hypervigilance"] },
             { name: "Social Anxiety Disorder", symptoms: ["Panic Attacks", "Isolation", "GI Disturbances"] },
             { name: "Borderline Personality Disorder", symptoms: ["Suicidal Ideation", "Angry", "Emotional Dysregulation"] },
@@ -363,7 +399,8 @@ export class SeederService {
             })
         );
 
-        const builder = new ScenarioBuilderHelper(scenario, this.nodeRepo, this.choiceRepo);
+        // Use standard wide layout for this scenario
+        const builder = new ScenarioBuilderHelper(scenario, this.nodeRepo, this.choiceRepo, 2400, 500);
 
         // --- ROOT (Col 0) ---
         const root = await builder.addNode(
@@ -408,7 +445,7 @@ export class SeederService {
         await builder.connect(
             root,
             suChecklistRapport,
-            "To make sure I understand quickly, I’m going to ask you a few specific symptom questions—sleep, appetite, energy, and focus. Does that sound alright?"
+            "To make sure I understand quickly, I’m going to ask you a few specific symptom questions, sleep, appetite, energy, and focus. Does that sound alright?"
         );
         await builder.connect(suChecklistRapport, suChecklistAnxiety, "");
         await builder.connect(suChecklistAnxiety, nChecklistIntro, "");
@@ -426,7 +463,7 @@ export class SeederService {
         await builder.connect(
             root,
             suStressRapport,
-            "A promotion plus a big meeting soon—that’s a lot to juggle. I’m curious: in your mind, is this mostly about work stress and burnout, or something different?"
+            "A promotion plus a big meeting soon, that’s a lot to juggle. I’m curious: in your mind, is this mostly about work stress and burnout, or something different?"
         );
         await builder.connect(suStressRapport, suStressDepression, "");
         await builder.connect(suStressDepression, nStressIntro, "");
@@ -470,12 +507,12 @@ export class SeederService {
         await builder.connect(
             nWarmOpen,
             nWarmOpen_Somatic,
-            "When you’re in that disaster-simulation mode, what do you notice in your body—heart, breathing, tension?"
+            "When you’re in that disaster-simulation mode, what do you notice in your body, heart, breathing, tension?"
         );
         await builder.connect(
             nWarmOpen,
             nWarmOpen_Cognitive,
-            "I’d like to hear more about those ‘disaster simulations’—what kinds of thoughts show up most often?"
+            "I’d like to hear more about those ‘disaster simulations’ what kinds of thoughts show up most often?"
         );
         await builder.connect(
             nWarmOpen,
@@ -514,7 +551,7 @@ export class SeederService {
         await builder.connect(
             nWarmOpen_Cognitive,
             suCognitiveAnxiety,
-            "It sounds like your mind is constantly scanning for what might go wrong—in work and beyond. Does that show up in other parts of your life too?"
+            "It sounds like your mind is constantly scanning for what might go wrong, in work and beyond. Does that show up in other parts of your life too?"
         );
         await builder.connect(suCognitiveAnxiety, suCognitiveCatastrophizing, "");
         await builder.connect(suCognitiveCatastrophizing, nWarmCognitiveDetail, "");
@@ -557,7 +594,7 @@ export class SeederService {
         await builder.connect(
             nWarmSomaticDetail,
             nWarmSomatic_Broaden,
-            "Beyond those intense physical episodes, how much does worry follow you into the rest of your day—thoughts at night, decisions, relationships?"
+            "Beyond those intense physical episodes, how much does worry follow you into the rest of your day, thoughts at night, decisions, relationships?"
         );
         await builder.connect(
             nWarmSomaticDetail,
@@ -596,12 +633,12 @@ export class SeederService {
         await builder.connect(
             nChecklistIntro,
             nChecklist_Mood,
-            "What about your mood overall—feeling low, flat, hopeless, or tearful?"
+            "What about your mood overall? Feeling low, flat, hopeless, or tearful?"
         );
         await builder.connect(
             nChecklistIntro,
             nChecklist_Focus,
-            "How is your concentration—any trouble staying on task, organizing, or following through?"
+            "How is your concentration? Any trouble staying on task, organizing, or following through?"
         );
 
         // From checklist-sleep
@@ -626,7 +663,7 @@ export class SeederService {
         const nChecklistMoodDepPath = await builder.addDialogue(
             4.5,
             1,
-            "I cancel plans a lot because I’m so drained. People probably think I’m depressed. I still care about things, though—I just feel too tense to enjoy them."
+            "I cancel plans a lot because I’m so drained. People probably think I’m depressed. I still care about things, though I just feel too tense to enjoy them."
         );
 
         await builder.connect(
@@ -660,7 +697,7 @@ export class SeederService {
         const nStress_Future = await builder.addDialogue(
             2.5,
             3,
-            "Part of me thinks, ‘This is just what being successful feels like—constant pressure.’ Another part of me wonders if I’m actually falling apart."
+            "Part of me thinks, ‘This is just what being successful feels like-constant pressure.’ Another part of me wonders if I’m actually falling apart."
         );
         const nStress_Hopeless = await builder.addEnd(
             2.5,
@@ -686,7 +723,7 @@ export class SeederService {
         await builder.connect(
             nStressIntro,
             nStress_Coping,
-            "How have you been coping with this pressure—things you do to get through the day or take the edge off?"
+            "How have you been coping with this pressure-things you do to get through the day or take the edge off?"
         );
 
         // --- PHASE 2D: MEDS-FIRST BRANCH (Col 2) ---
@@ -766,7 +803,7 @@ export class SeederService {
         const nRuleOutsGAD = await builder.addDialogue(
             8,
             2,
-            "I don’t get flashbacks or anything like that. And when I’m not anxious, I can focus fine. I still enjoy things—I’m just too wound up to relax into them."
+            "I don’t get flashbacks or anything like that. And when I’m not anxious, I can focus fine. I still enjoy things-I’m just too wound up to relax into them."
         );
 
         await builder.connect(
@@ -784,7 +821,7 @@ export class SeederService {
         await builder.connect(
             nRuleOutsGAD,
             endGAD,
-            "From what you’ve shared—longstanding, excessive worry across many areas, physical tension, sleep trouble, but no persistent hopelessness or flashbacks—this fits well with an anxiety pattern we call Generalized Anxiety Disorder."
+            "From what you’ve shared-longstanding, excessive worry across many areas, physical tension, sleep trouble, but no persistent hopelessness or flashbacks-this fits well with an anxiety pattern we call Generalized Anxiety Disorder."
         );
 
         // 2) MDD-LEANING MISDIAGNOSIS PATH (DEPRESSION)
@@ -867,7 +904,7 @@ export class SeederService {
         const endADHD = await builder.addEnd(
             8,
             4,
-            "If we’re going with ADHD, I just hope I don’t get labeled as ‘lazy.’ I’m trying so hard—all while my brain is sprinting."
+            "If we’re going with ADHD, I just hope I don’t get labeled as ‘lazy.’ I’m trying so hard-all while my brain is sprinting."
         );
 
         await builder.connect(
@@ -974,8 +1011,457 @@ export class SeederService {
         await builder.connect(
             nWarmSomatic_Minimize,
             endMinimize,
-            "If part of you feels unsure this is ‘serious enough,’ we can respect that and keep the focus light—simple stress-management tools and checking in if things worsen."
+            "If part of you feels unsure this is ‘serious enough,’ we can respect that and keep the focus light-simple stress-management tools and checking in if things worsen."
         );
     }
 
+    private async createSocialAnxietyScenario(correctDiagnosis: ConditionEntity) {
+        // 1. Create Scenario Container
+        const scenario = await this.scenarioRepo.save(
+            this.scenarioRepo.create({
+                name: "Case Study: The Silenced Singer",
+                description:
+                    "Leo (24) is a semi-professional musician who recently walked off stage mid-set. He describes intense physical symptoms (heart racing, shaking) and is considering quitting music. He reports using alcohol to 'numb the nerves.'",
+                correctDiagnosis: correctDiagnosis,
+                initialState: {
+                    rapport: 50,
+                    social_score: 0,      // Tracks evidence for Social Anxiety
+                    panic_score: 0,       // Tracks evidence for Panic Disorder
+                    substance_score: 0    // Tracks evidence for Substance Use
+                }
+            })
+        );
+
+        // 2. Initialize Builder (Standard Layout)
+        const builder = new ScenarioBuilderHelper(scenario, this.nodeRepo, this.choiceRepo, 2400, 500);
+
+        // --- ROOT (Col 0) ---
+        const root = await builder.addNode(
+            0,
+            3,
+            NodeType.ROOT,
+            "I don't even know why I'm here. I’m a musician, getting nervous is part of the job. But last Friday... I just froze. I looked at the crowd, my throat closed up, and I ran off stage. My band is furious."
+        );
+        scenario.rootDialogueNode = root;
+        await this.scenarioRepo.save(scenario);
+
+        // --- PHASE 1: FIRST PIVOT (Col 1) ---
+
+        // Path A: Physical Focus (Leads toward Panic/Medical)
+        const suPanicStart = await builder.addStateUpdate(0.5, 1, "panic_score", "add", 10);
+        const nPhysical = await builder.addDialogue(
+            1.5,
+            1,
+            "It felt like a heart attack. My chest got tight, my hands went numb. I genuinely thought I was going to die right there next to the drum kit."
+        );
+
+        await builder.connect(root, suPanicStart, "That sounds terrifying. Can you describe exactly what was happening in your body when you froze?");
+        await builder.connect(suPanicStart, nPhysical, "");
+
+        // Path B: Cognitive/Social Focus (Leads toward Social Anxiety)
+        const suSocialStart = await builder.addStateUpdate(0.5, 3, "social_score", "add", 10);
+        const nCognitive = await builder.addDialogue(
+            1.5,
+            3,
+            "I saw this one guy in the front row whisper to his girlfriend, and my brain just screamed: 'They know you’re a fraud.' I felt like everyone was analyzing my every movement."
+        );
+
+        await builder.connect(root, suSocialStart, "What was going through your mind the moment you decided to leave the stage?");
+        await builder.connect(suSocialStart, nCognitive, "");
+
+        // Path C: Coping/Substance Focus (Leads toward Substance/Avoidance)
+        const suSubstanceStart = await builder.addStateUpdate(0.5, 5, "substance_score", "add", 10);
+        const nCoping = await builder.addDialogue(
+            1.5,
+            5,
+            "Usually I have two or three shots of whiskey before a set and I’m fine. Friday I only had one. I guess I didn't numb myself enough."
+        );
+
+        await builder.connect(root, suSubstanceStart, "You mentioned getting nervous is part of the job. How have you been managing those nerves until now?");
+        await builder.connect(suSubstanceStart, nCoping, "");
+
+        // --- PHASE 2: DIVERGENT PATHS (Col 2 & 3) ---
+        // Note: These branches deliberately do not cross back over easily.
+
+        // --- BRANCH A: The "Heart Attack" (Panic vs Social) ---
+        
+        // A1: Context Check (Crucial for differential)
+        const nContextCheck = await builder.addDialogue(
+            3, 1,
+            "No. Never at home. I mean, I worry at home, but I don't get the 'heart attack' feeling unless there are people around, or if I have to go to the grocery store during rush hour."
+        );
+        // A2: Medical focus (Distraction)
+        const nMedicalFocus = await builder.addDialogue(
+            3, 0,
+            "I went to the ER afterwards. They did an ECG and said my heart is fine. They gave me a Xanax and told me to rest. But I can't 'rest' my way out of a career."
+        );
+
+        await builder.connect(nPhysical, nContextCheck, "Do these intense physical sensations ever happen when you are alone, or completely out of the blue?");
+        await builder.connect(nPhysical, nMedicalFocus, "Did you seek any medical attention after the show to rule out heart issues?");
+
+        // --- BRANCH B: The "Fraud" (Specific vs Generalized) ---
+
+        // B1: Generalization (Key for SAD diagnosis)
+        const nGeneralSocial = await builder.addDialogue(
+            3, 3,
+            "It’s not just performing. Ordering coffee is a nightmare. I rehearse what I'm going to say to the barista three times. If I stutter, I dwell on it for hours."
+        );
+        // B2: Performance Focus (Leads to "Specific Phobia" trap)
+        const nPerformanceFocus = await builder.addDialogue(
+            3, 4,
+            "My music is personal. If they reject the song, they reject me. It feels like being naked on stage. I don't care about other stuff, but music is... everything."
+        );
+
+        await builder.connect(nCognitive, nGeneralSocial, "Does this fear of being analyzed or judged show up in other areas of your life, like parties or errands?");
+        await builder.connect(nCognitive, nPerformanceFocus, "Is it specifically the music and the performance that feels dangerous, or being seen in general?");
+
+        // --- BRANCH C: The "Whiskey" (Substance vs Symptom) ---
+
+        // C1: Functional impairment (Dependency check)
+        const nSubstanceDependence = await builder.addDialogue(
+            3, 5,
+            "I don't drink in the mornings or anything. But I literally cannot walk into a room full of strangers without a buzz. It's the only way the noise in my head stops."
+        );
+        // C2: Minimizing (Denial)
+        const nMinimizing = await builder.addDialogue(
+            3, 6,
+            "Look, every musician drinks. It's the lifestyle. I'm not an alcoholic. I just had a bad night. Can't you just teach me some breathing exercises?"
+        );
+
+        await builder.connect(nCoping, nSubstanceDependence, "Does it feel like you can function socially without alcohol, or has it become a requirement?");
+        await builder.connect(nCoping, nMinimizing, "I hear you saying it helps. Are you worried that the alcohol use itself is becoming the problem?");
+
+        // --- PHASE 3: THE DIAGNOSTIC TRAPS (Col 4 & 5) ---
+
+        // From nContextCheck (He admitted it happens at grocery stores too -> SAD Clue)
+        const nSocialRealization = await builder.addDialogue(
+            5, 1,
+            "Exactly. It's the eyes. It feels like everyone is staring. Even at the grocery store, if I drop a coin, I feel like I have to leave immediately."
+        );
+        
+        await builder.connect(nContextCheck, nSocialRealization, "You mentioned the grocery store. What is it about that environment that triggers the feeling?");
+        await builder.connect(nContextCheck, nMedicalFocus, "Maybe we should focus on the physical symptoms. Have you considered beta-blockers?"); // Bad choice leads to medical node
+
+        // From nMedicalFocus (Patient is frustrated)
+        const nFrustrated = await builder.addDialogue(
+            5, 0,
+            "I don't want pills that make me sleepy. I need to be sharp to play. I just want to stop feeling like I'm dying every time I step out the door."
+        );
+        await builder.connect(nMedicalFocus, nFrustrated, "Since the doctors cleared you, we can treat this as Panic Disorder and work on breathing."); // Trap: Panic Disorder
+
+        // From nGeneralSocial (Strong SAD Evidence)
+        const nHistory = await builder.addDialogue(
+            5, 3,
+            "Since middle school. I used to eat lunch in the bathroom stall so no one would look at me. I thought becoming a rock star would 'fix' me, make me confident. It didn't."
+        );
+        await builder.connect(nGeneralSocial, nHistory, "It sounds like this fear of judgment has been with you for a long time. How far back does this go?");
+        await builder.connect(nGeneralSocial, nFrustrated, "It sounds like you overthink things. Have you tried just ignoring those thoughts?"); // Invalidating choice
+
+        // From nSubstanceDependence (Substance as coping mechanism)
+        const nRootCause = await builder.addDialogue(
+            5, 5,
+            "The noise in my head is just... 'You look stupid,' 'Walk normal,' 'Don't spill that.' The alcohol turns that voice down from a 10 to a 4."
+        );
+        await builder.connect(nSubstanceDependence, nRootCause, "When you say 'noise in your head,' what is that voice telling you when you're sober?");
+        await builder.connect(nSubstanceDependence, nMinimizing, "We really need to address your drinking before we can do any therapy."); // Rigid choice
+
+        // --- PHASE 4: ENDINGS (Col 7) ---
+
+        // ENDING 1: CORRECT DIAGNOSIS (Social Anxiety Disorder)
+        // Path: nPhysical -> nContextCheck -> nSocialRealization -> End
+        // Path: nCognitive -> nGeneralSocial -> nHistory -> End
+        const endSAD = await builder.addEnd(
+            7, 3,
+            "Social Anxiety... yeah. That actually makes sense. I always thought I was just weird or cowardly. If we can work on the fear of judgment, maybe I can perform without the whiskey."
+        );
+
+        await builder.connect(nSocialRealization, endSAD, "Leo, because this anxiety happens in social situations—performing, grocery stores—and is driven by a fear of judgment, this fits Social Anxiety Disorder, not just Panic.");
+        await builder.connect(nHistory, endSAD, "Your history of hiding to avoid scrutiny, combined with your current struggles, points strongly to Social Anxiety Disorder.");
+        await builder.connect(nRootCause, endSAD, "It sounds like you're using alcohol to treat a severe underlying Social Anxiety. If we treat the anxiety, the need to drink might decrease.");
+
+        // ENDING 2: MISDIAGNOSIS - PANIC DISORDER (Focus on physical symptoms)
+        const endPanic = await builder.addEnd(
+            7, 1,
+            "Okay, Panic Disorder. So I just need to learn to breathe through the heart attacks? I guess I can try, but I still feel like people are watching me while I breathe."
+        );
+
+        await builder.connect(nFrustrated, endPanic, "Based on the intense physical symptoms you described, we can treat this as Panic Disorder and focus on calming your body.");
+        await builder.connect(nPhysical, endPanic, "Those 'heart attack' sensations are classic Panic Attacks. Let's focus on managing those.");
+
+        // ENDING 3: MISDIAGNOSIS - SUBSTANCE ABUSE (Focus only on alcohol)
+        const endSubstance = await builder.addEnd(
+            7, 5,
+            "You sound like my ex. Look, if I stop drinking, I stop playing music. I can't do this sober. If you can't help me with the nerves, I'm wasting my time."
+        );
+
+        await builder.connect(nMinimizing, endSubstance, "I'm concerned you have an Alcohol Use Disorder. You need to attend AA meetings before we continue.");
+        await builder.connect(nSubstanceDependence, endSubstance, "The primary issue here is the alcohol dependency. We have to stop that first.");
+
+        // ENDING 4: MISDIAGNOSIS - PERFORMANCE ANXIETY ONLY (Too narrow)
+        const endPerformance = await builder.addEnd(
+            7, 4,
+            "Just 'stage fright'? I don't know, doc. I feel like this when I'm ordering a sandwich, not just on stage. But sure, maybe I just need more rehearsal."
+        );
+
+        await builder.connect(nPerformanceFocus, endPerformance, "This sounds like specific Performance Anxiety. We can work on visualization techniques for the stage.");
+        
+        // ENDING 5: DROPOUT (Invalidation)
+        const endDropout = await builder.addEnd(
+            7, 6,
+            "You're not listening. It's not just 'stress.' It feels like my life is ending. I think I'm gonna go."
+        );
+        
+        // Connect random bad choices to dropout
+        await builder.connect(nMedicalFocus, endDropout, "Have you tried yoga? It's great for stress.");
+    }
+
+    private async createBipolarScenario(correctDiagnosis: ConditionEntity) {
+        // 1. Create Scenario Container
+        const scenario = await this.scenarioRepo.save(
+            this.scenarioRepo.create({
+                name: "Case Study: The Late-Night Coder",
+                description:
+                    "Jordan (20) is a computer science student on academic probation. Presents with 'burnout,' erratic sleep, and falling behind despite bursts of intense productivity.",
+                correctDiagnosis: correctDiagnosis,
+                initialState: {
+                    rapport: 40,
+                    bipolar_index: 0,   // Tracks evidence for Hypomania
+                    depressive_index: 0, // Tracks evidence for MDD
+                    adhd_index: 0,       // Tracks evidence for ADHD
+                    substance_suspicion: 0
+                }
+            })
+        );
+
+        // 2. Initialize Builder (Standard Layout)
+        const builder = new ScenarioBuilderHelper(scenario, this.nodeRepo, this.choiceRepo, 2400, 500);
+
+        // --- ROOT (Col 0) ---
+        const root = await builder.addNode(
+            0,
+            3,
+            NodeType.ROOT,
+            "Look, the Dean sent me here because my grades tanked this semester. I just need a note saying I’m burned out so I can get an extension. I was coding 20 hours a day last month, and now I can barely get out of bed."
+        );
+        scenario.rootDialogueNode = root;
+        await this.scenarioRepo.save(scenario);
+
+        // --- PHASE 1: INITIAL INQUIRY (Col 1) ---
+
+        // Path A: Focus on the "Crash" (Depression bias)
+        const suDepStart = await builder.addStateUpdate(0.5, 1, "depressive_index", "add", 10);
+        const nCrash = await builder.addDialogue(
+            1.5,
+            1,
+            "It’s like hitting a wall. I feel heavy, useless. I slept 14 hours yesterday and woke up tired. I missed three labs because I just couldn't move."
+        );
+
+        await builder.connect(root, suDepStart, "That sounds exhausting. Tell me more about what 'barely getting out of bed' looks like for you.");
+        await builder.connect(suDepStart, nCrash, "");
+
+        // Path B: Focus on the "20 hours a day" (Hypomania clue)
+        const suBpStart = await builder.addStateUpdate(0.5, 3, "bipolar_index", "add", 10);
+        const nHigh = await builder.addDialogue(
+            1.5,
+            3,
+            "Oh, that? That was the 'Golden Week.' I rewrote the entire backend for our group project in three days. I felt like I was seeing the Matrix code. I didn't need food, didn't need sleep. I was a god."
+        );
+
+        await builder.connect(root, suBpStart, "You mentioned coding 20 hours a day last month. What did that period feel like?");
+        await builder.connect(suBpStart, nHigh, "");
+
+        // Path C: Focus on Substance/Lifestyle (Skeptical bias)
+        const suSubStart = await builder.addStateUpdate(0.5, 5, "substance_suspicion", "add", 10);
+        const nSubstance = await builder.addDialogue(
+            1.5,
+            5,
+            "Just coffee. Okay, maybe a lot of coffee and some energy drinks. And maybe I borrowed some Adderall from a roommate to stay awake during the crash phase, but that didn't even work."
+        );
+
+        await builder.connect(root, suSubStart, "Shift work like that usually requires fuel. Are you using anything to keep that pace up?");
+        await builder.connect(suSubStart, nSubstance, "");
+
+        // --- PHASE 2: DEEPENING THE INVESTIGATION (Col 2 & 3) ---
+
+        // --- From The Crash (Depression Path) ---
+        
+        // 2A: Suicidality Check
+        const nSafety = await builder.addDialogue(
+            2.5, 
+            0, 
+            "I mean, I don't want to die. I just want to stop feeling like a failure. But yeah, when I'm staring at the ceiling at 2 PM, I wonder if anyone would notice if I vanished."
+        );
+        await builder.connect(nCrash, nSafety, "When you're feeling that heavy and useless, do you ever have thoughts of hurting yourself?");
+
+        // 2B: Explore the transition (Bridge to Bipolar)
+        const suBridgeToBp = await builder.addStateUpdate(2.2, 1, "bipolar_index", "add", 5);
+        const nTransition = await builder.addDialogue(
+            2.5, 
+            1, 
+            "It wasn't gradual. One day I was sending fifty emails an hour and planning to start a startup, and the next day... boom. Darkness."
+        );
+        await builder.connect(nCrash, suBridgeToBp, "Did this exhaustion come on slowly, or was it a sudden shift?");
+        await builder.connect(suBridgeToBp, nTransition, "");
+
+        // 2C: Validate Burnout (Missed nuance)
+        const nBurnoutAgree = await builder.addDialogue(
+            2.5, 
+            2, 
+            "Exactly. I pushed too hard. I just need rest, right? If I can just sleep for a week, I'll be back to my productive self."
+        );
+        await builder.connect(nCrash, nBurnoutAgree, "It sounds like classic burnout. You ran your battery dry and now your body is forcing a recharge.");
+
+        // --- From The High (Hypomania Path) ---
+
+        // 2D: Sleep Need Check (Crucial Differential)
+        const suSleepCheck = await builder.addStateUpdate(2.2, 3, "bipolar_index", "add", 15);
+        const nSleepHigh = await builder.addDialogue(
+            2.5, 
+            3, 
+            "That's the crazy part. I'd sleep maybe 2 hours? And wake up totally refreshed. Better than refreshed, electric. My brain was faster than my fingers."
+        );
+        await builder.connect(nHigh, suSleepCheck, "During that 'Golden Week,' were you tired but forcing yourself to stay awake, or did you just not need the sleep?");
+        await builder.connect(suSleepCheck, nSleepHigh, "");
+
+        // 2E: Quality of Work (Reality Testing)
+        const nWorkQuality = await builder.addDialogue(
+            2.5, 
+            4, 
+            "The code compiles... mostly. Looking back, I definitely over-engineered it. And I might have sent a few aggressive emails to the professor telling him his curriculum was outdated. He wasn't happy."
+        );
+        await builder.connect(nHigh, nWorkQuality, "You said you were a 'god.' Looking back at the work you did then, does it still hold up?");
+
+        // 2F: ADHD Pivot (Common Trap)
+        const suAdhdTrap = await builder.addStateUpdate(2.2, 5, "adhd_index", "add", 10);
+        const nAdhdPivot = await builder.addDialogue(
+            2.5, 
+            5, 
+            "Always. Since I was a kid. I can hyperfocus on things I like, but boring stuff? Impossible. My mind is like a browser with 100 tabs open."
+        );
+        await builder.connect(nHigh, suAdhdTrap, "Racing thoughts and intense focus can sometimes be ADHD. Have you always had trouble regulating your attention?");
+        await builder.connect(suAdhdTrap, nAdhdPivot, "");
+
+        // --- PHASE 3: CONSEQUENCES & HISTORY (Col 4) ---
+
+        // From nSleepHigh (The clearest Hypomania Indicator)
+        const nImpulse = await builder.addDialogue(
+            4, 
+            3, 
+            "Yeah, I spent my entire financial aid check on server equipment I didn't need. And I hooked up with my TA. Which... is complicated now."
+        );
+        
+        await builder.connect(nSleepHigh, nImpulse, "When you felt 'electric,' did you do anything impulsive? Spending money, risky behaviors, or saying things you regretted?");
+        
+        const nCreative = await builder.addDialogue(
+            4, 
+            4, 
+            "I wrote a screenplay! About a coder who saves the world. It's actually kind of genius. I think I'm going to drop out and pitch it to Netflix."
+        );
+        await builder.connect(nSleepHigh, nCreative, "Did you take on any other projects besides the coding during that week?");
+
+        // From nTransition (The Bridge)
+        const nCycleHistory = await builder.addDialogue(
+            4, 
+            1, 
+            "Yeah, freshman year was the same. A month of partying and acing tests, then a month of darkness. I thought it was just adjusting to college."
+        );
+        await builder.connect(nTransition, nCycleHistory, "Has this pattern of 'Golden Weeks' followed by crashes happened before?");
+
+        // From nSubstance (The Substance Path)
+        const nSubstanceDefense = await builder.addDialogue(
+            4, 
+            5, 
+            "I'm not an addict, okay? I just use what works. When I'm down, I need a boost. When I'm flying, I sometimes drink to slow my brain down so I can actually talk to people."
+        );
+        await builder.connect(nSubstance, nSubstanceDefense, "It sounds like you're self-medicating to manage these energy swings. Does that feel accurate?");
+
+        // --- PHASE 4: LOGIC GATES & CONVERGENCE (Col 6) ---
+        
+        // Check Bipolar Index High
+        const logicBPHigh = await builder.addLogic(6, 3, "bipolar_index", ">", 20);
+
+        // Check Depressive Index High (but low BP)
+        const logicMDDHigh = await builder.addLogic(6, 1, "depressive_index", ">", 10);
+
+        // Connect various paths to logic gates
+        await builder.connect(nImpulse, logicBPHigh, "Let's put these pieces together...");
+        await builder.connect(nCreative, logicBPHigh, "Let's look at the big picture...");
+        await builder.connect(nCycleHistory, logicBPHigh, "Reviewing your history...");
+        
+        await builder.connect(nSafety, logicMDDHigh, "Considering your low mood...");
+        await builder.connect(nBurnoutAgree, logicMDDHigh, "Thinking about the burnout...");
+
+        // --- PHASE 5: DIAGNOSTIC CONCLUSIONS (Col 8) ---
+
+        // 1. THE CORRECT PATH: Bipolar II (Requires High BP Index)
+        const nDiagnoseBPII = await builder.addDialogue(
+            8, 
+            3, 
+            "Bipolar? Isn't that where you hallucinate and think you're Jesus? I mean, I felt good, but I wasn't crazy. I just... I don't want to lose the 'Golden Weeks.' That's the only time I'm special."
+        );
+
+        // Success outcome logic path (True)
+        await builder.connect(logicBPHigh, nDiagnoseBPII, "Jordan, the pattern of 'Golden Weeks' with little sleep followed by heavy crashes sounds like Bipolar II Disorder.", 0);
+
+        const endBPII = await builder.addEnd(
+            9, 
+            3, 
+            "If medication can stop the crash but keep me creative... I guess I'm listening. I can't afford to fail another semester."
+        );
+
+        await builder.connect(nDiagnoseBPII, endBPII, "We can aim for stability. The goal isn't to make you flat, but to prevent the crash that's threatening your degree.");
+        
+        await builder.connect(nDiagnoseBPII, endBPII, "It is a common fear to lose that spark. But treating the mood instability usually helps you be consistently productive, rather than erratic.");
+        
+        // 2. THE MISDIAGNOSIS: MDD (Missed the highs)
+        // Failure logic path from BP High (False) -> goes here if score is low
+        // Or True path from MDD logic
+        const nDiagnoseMDD = await builder.addDialogue(
+            8, 
+            1, 
+            "Yeah, depression makes sense. Life just feels impossible right now. So, can I get that extension note?"
+        );
+
+        await builder.connect(logicBPHigh, nDiagnoseMDD, "I think you are suffering from Major Depression triggered by academic stress.", 1);
+        await builder.connect(logicMDDHigh, nDiagnoseMDD, "This looks like a severe episode of Major Depression.", 0);
+
+        const endMDD = await builder.addEnd(
+            9, 
+            1, 
+            "I'll take the antidepressants. Hopefully they give me enough energy to finish this backend code." 
+            // CLINICAL NOTE: This is dangerous (SSRIs can trigger mania), representing a fail state in the sim.
+        );
+
+        await builder.connect(nDiagnoseMDD, endMDD, "We can start an antidepressant to help lift your mood and energy levels.");
+
+        // 3. THE MISDIAGNOSIS: ADHD (Focused on focus)
+        const nDiagnoseADHD = await builder.addDialogue(
+            8, 
+            5, 
+            "Finally. Everyone told me I was just lazy. If I can just get some Ritalin or something, I can actually focus on the boring work, right?"
+        );
+        
+        // Manual connect from ADHD pivot path
+        await builder.connect(nAdhdPivot, nDiagnoseADHD, "The racing thoughts and inability to focus on 'boring' tasks points strongly to ADHD.");
+
+        const endADHD = await builder.addEnd(
+            9, 
+            5, 
+            "Okay, let's try the stimulants. Maybe that will stop my brain from jumping around so much."
+            // CLINICAL NOTE: Stimulants can worsen mania/anxiety.
+        );
+        
+        await builder.connect(nDiagnoseADHD, endADHD, "We'll treat the attention deficit, which should help you regulate your work output.");
+
+        // 4. THE DISMISSAL: "Just growing pains" (Low Rapport/Bad choices)
+        const nDismissal = await builder.addEnd(
+            8, 
+            7, 
+            "You sound like my parents. 'Just sleep more, eat better.' I tried that. It doesn't work. I think I'm done here."
+        );
+
+        // Fallback connections for bad paths
+        await builder.connect(nWorkQuality, nDismissal, "Honestly, you might just need to improve your time management and sleep hygiene.");
+        await builder.connect(nSubstanceDefense, nDismissal, "You need to get clean from the caffeine and pills before we can really see what's wrong.");
+    }
 }
